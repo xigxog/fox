@@ -1,0 +1,33 @@
+name: Build and release tag
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  release-tag:
+    name: Release tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Build release packages
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: make release
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release/*

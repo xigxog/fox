@@ -1,0 +1,21 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test output
+*.test
+
+# Debug output
+__debug_bin
+*.out
+
+# Build output
+bin/
+release/
+
+# Misc
+workstation/
+*.ignore.*

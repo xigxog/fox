@@ -1,0 +1,404 @@
+package utils
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	v5obj "github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/xigxog/kubefox-cli/internal/log"
+	a "github.com/xigxog/kubefox/libs/core/admin"
+	"github.com/xigxog/kubefox/libs/core/api/maker"
+	"github.com/xigxog/kubefox/libs/core/api/uri"
+	"sigs.k8s.io/yaml"
+)
+
+var Flags Flags
+
+var (
+	ConfigAlias     = []string{"conf", "config"}
+	DeploymentAlias = []string{"deployment", "deployments", "deploy"}
+	EnvAlias        = []string{"environment", "environments", "env", "envs"}
+	ReleaseAlias    = []string{"release", "releases", "rel", "rels"}
+	SystemAlias     = []string{"system", "systems", "sys"}
+)
+
+func CommitCurSystem() {
+	log.Info("Committing files to Git")
+	commitMsg := fmt.Sprintf("Fox commit: updated KubeFox system %s.", cut.system)
+	cut.CommitAll(commitMsg)
+}
+
+func CommitAll(msg string) {
+	repo, err := cut.GitRepo()
+	if err != nil {
+		log.Fatal("Error committing files Git repo: %v", err)
+	}
+	w, err := repo.Worktree()
+	if err != nil {
+		log.Fatal("Unable to access Git worktree: %v", err)
+	}
+	_, err = w.Add(".")
+	if err != nil {
+		log.Fatal("Unable to add files to Git worktree: %v", err)
+	}
+	hash, err := w.Commit(msg, &git.CommitOptions{})
+	if err != nil {
+		log.Fatal("Unable to commit files to Git: %v", err)
+	}
+	log.Info("All files committed to Git, commit hash: %s", hash)
+}
+
+func tagExists(tag string) bool {
+	log.Verbose("Checking if tag exists")
+	r, err := cut.GitRepo()
+	if err != nil {
+		log.Fatal("Error loading git repo: %v", err)
+		return false
+	}
+	tagFoundErr := "tag was found"
+	tags, err := r.TagObjects()
+	if err != nil {
+		log.Fatal("get tags error: %v", err)
+		return false
+	}
+	res := false
+	err = tags.ForEach(func(t *v5obj.Tag) error {
+		if t.Name == tag {
+			res = true
+			return fmt.Errorf(tagFoundErr)
+		}
+		return nil
+	})
+	if err != nil && err.Error() != tagFoundErr {
+		log.Fatal("iterate tags error: %v", err)
+		return false
+	}
+	return res
+}
+
+func SetTag(tag string) (bool, error) {
+	r, err := cut.GitRepo()
+	if err != nil {
+		log.Fatal("%v", err)
+		return false, nil
+	}
+
+	if cut.tagExists(tag) {
+		log.Fatal("tag %s already exists", tag)
+		return false, nil
+	}
+	log.Info("Setting tag %s", tag)
+	h, err := r.Head()
+	if err != nil {
+		log.Fatal("get HEAD error: %v", err)
+		return false, err
+	}
+	_, err = r.CreateTag(tag, h.Hash(), &git.CreateTagOptions{
+		Message: tag,
+	})
+
+	if err != nil {
+		log.Fatal("create tag error: %v", err)
+		return false, err
+	}
+
+	return true, nil
+}
+
+func Comp() string {
+	if len(cut.args) == 0 {
+		return ""
+	}
+
+	return cut.args[0]
+}
+
+func CompHash(component string) string {
+	return cut.PathHash(fmt.Sprintf("components/%s/", component))
+}
+
+func CompHashShort(component string) string {
+	return cut.PathHashShort(fmt.Sprintf("components/%s/", component))
+}
+
+func CompAbsPath(component string) string {
+	return filepath.Join(cut.SysRepoPath(), "components", component)
+}
+
+func CompMainPath() string {
+	return filepath.Join(cut.SysRepoPath(), "components")
+}
+
+func GitRepo() (*git.Repository, error) {
+	if cut.gitRepo != nil {
+		return cut.gitRepo, nil
+	}
+
+	log.Verbose("Opening git repo '%s'", cut.SysRepoPath())
+	gitRepo, err := git.PlainOpen(cut.SysRepoPath())
+	if err != nil {
+		return nil, err
+	}
+
+	cut.gitRepo = gitRepo
+	return gitRepo, nil
+}
+
+func GitRepoURL() string {
+	// r, err := cut.GitRepo()
+	// if err != nil {
+	// 	log.Fatal("Error loading Git Repo")
+	// }
+	// remotes, err := r.Remotes()
+	// if err != nil {
+	// 	log.Fatal("Error loading Remotes")
+	// }
+	// remote := remotes[0]
+	// url := remote.Config().URLs[0]
+	// res := strings.TrimLeft(url, "@")
+	// return res
+
+	url := fmt.Sprintf("https://%s/%s/%s.git", "github.com", cut.org, cut.system)
+	return url
+}
+
+func GitRepoAndRef() (*git.Repository, *plumbing.Reference) {
+	if cut.gitRepo != nil && cut.gitRef != nil {
+		return cut.gitRepo, cut.gitRef
+	}
+
+	gitRepo, err := cut.GitRepo()
+	if err != nil {
+		log.Fatal("Error opening git repo: %v", err)
+	}
+
+	gitRef, err := gitRepo.Head()
+	if err != nil {
+		log.Fatal("Error opening head ref of git repo: %v", err)
+	}
+
+	cut.gitRef = gitRef
+	return gitRepo, gitRef
+}
+
+func GitRefName() string {
+	gitRepo, gitRef := cut.GitRepoAndRef()
+
+	if gitRef.Name().IsBranch() {
+		return "branch/" + gitRef.Name().Short()
+	}
+
+	// find tag
+	var refName string
+	tags, err := gitRepo.Tags()
+	if err != nil {
+		return ""
+	}
+	tags.ForEach(func(tag *plumbing.Reference) error {
+		if gitRef.Hash() == tag.Hash() {
+			refName = "tag/" + tag.Name().Short()
+		}
+		return nil
+	})
+
+	return refName
+}
+
+func GitRefHash() string {
+	_, gitRef := cut.GitRepoAndRef()
+
+	return gitRef.Hash().String()
+}
+
+func GitRefHashShort() string {
+	_, gitRef := cut.GitRepoAndRef()
+
+	return gitRef.Hash().String()[0:9]
+}
+
+func PathHash(path string) string {
+	gitRepo, gitRef := cut.GitRepoAndRef()
+
+	iter, err := gitRepo.Log(&git.LogOptions{
+		From: gitRef.Hash(),
+		PathFilter: func(c string) bool {
+			return strings.HasPrefix(c, path)
+		},
+	})
+	if err != nil {
+		log.Fatal("Error finding hash for path '%s': %v", path, err)
+	}
+
+	commit, err := iter.Next()
+	if err != nil {
+		log.Fatal("Error finding hash for path '%s': %v", path, err)
+	}
+
+	if commit != nil {
+		return commit.Hash.String()
+	}
+
+	log.Fatal("Error find hash for path '%s'", path)
+	return ""
+}
+
+func PathHashShort(path string) string {
+	gitRepo, gitRef := cut.GitRepoAndRef()
+
+	iter, err := gitRepo.Log(&git.LogOptions{
+		From: gitRef.Hash(),
+		PathFilter: func(c string) bool {
+			return strings.HasPrefix(c, path)
+		},
+	})
+	if err != nil {
+		log.Fatal("Error finding hash for path '%s': %v", path, err)
+	}
+
+	commit, err := iter.Next()
+	if err != nil {
+		log.Fatal("Error finding hash for path '%s': %v", path, err)
+	}
+
+	if commit != nil {
+		return commit.Hash.String()[0:9]
+	}
+
+	log.Fatal("Error find hash for path '%s'", path)
+	return ""
+}
+
+func SysRepoPath() string {
+	if cut.sysRepoPath != "" {
+		return cut.sysRepoPath
+	}
+
+	flag := cut.flags.SysRepoPath
+	if flag == "" {
+		wd, err := os.Getwd()
+		if err != nil {
+			log.Fatal(`Error getting working directory, please set "system-repo" flag: %v`, err)
+		}
+		flag = filepath.Clean(wd)
+	}
+
+	dir, err := filepath.Abs(flag)
+	if err != nil {
+		log.Fatal("Error getting absolute path of git repo '%s': %v", flag, err)
+	}
+
+	// walk up directory tree looking for root of git repo
+	for {
+		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+			cut.SetGitRepoPath(dir)
+			return dir
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			log.Fatal("Error finding root of git repo at '%s'", flag)
+			return ""
+		}
+
+		dir = parent
+	}
+}
+
+func SetGitRepoPath(repoPath string) {
+	cut.sysRepoPath = repoPath
+	log.Verbose("System git repo path set to '%s'", repoPath)
+}
+
+
+
+func NewResource(u uri.URI) any {
+	r := maker.ObjectFromURI(u)
+	if r == nil {
+		log.Fatal("Unknown kind '%s' provided", u.Kind)
+	}
+	return r
+}
+
+func NewSubResource(u uri.URI) any {
+	r := maker.SubObjFromURI(u)
+	if r == nil {
+		log.Fatal("Unknown subresource kind '%s' provided", u.SubKind())
+	}
+	return r
+}
+
+func unmarshal(path string, contents []byte, res any) {
+	var err error
+	ext := strings.ToLower(filepath.Ext(path))
+	switch ext {
+	case ".yml":
+		fallthrough
+	case ".yaml":
+		err = yaml.Unmarshal(contents, res)
+	case ".json":
+		fallthrough
+	default:
+		err = json.Unmarshal(contents, res)
+	}
+	if err != nil {
+		log.Fatal("Error unmarshaling file '%s': %v", path, err)
+	}
+}
+
+func Contains(s []string, e string) bool {
+	for i := range s {
+		if s[i] == e {
+			return true
+		}
+	}
+	return false
+}
+
+func UserHomeDir() string {
+	dirname, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal("Error accessing home directory: %v", err)
+	}
+	return dirname
+}
+
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return false
+	}
+	return !info.IsDir()
+}
+
+func ensureDirForFile(path string) {
+	ensureDir(filepath.Dir(path))
+}
+
+func ensureDir(path string) {
+	if err := os.MkdirAll(path, os.ModePerm); err != nil {
+		log.Fatal("Error creating directory: %s", err)
+	}
+}
+
+func osPath(fp string, sp string) string {
+	osFilePath := strings.TrimPrefix(fp, "filesystem")
+	osPath := filepath.Join(sp, osFilePath)
+	return osPath
+}
+
+func ResourceExists(r *a.Response) (bool, any) {
+
+	if r.Code == 200 && !r.IsError && r.Data != nil {
+		return true, r.Data
+	} else {
+		return false, nil
+	}
+
+}

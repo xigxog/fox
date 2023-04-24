@@ -1,0 +1,26 @@
+name: Build plugin binary
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-binary:
+    name: Build plugin binary
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Build binary
+        run: make

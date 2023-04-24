@@ -1,0 +1,166 @@
+package utils
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
+	pack "github.com/buildpacks/pack/pkg/client"
+	"github.com/xigxog/kubefox-cli/internal/log"
+	"github.com/xigxog/kubefox/libs/core/api/admin/v1alpha1"
+	"github.com/xigxog/kubefox/libs/core/api/common"
+	"github.com/xigxog/kubefox/libs/core/api/maker"
+	"sigs.k8s.io/yaml"
+)
+
+func (cut *CmdUtils) BuildComp(comp string) string {
+	compAbsPath := cut.CompAbsPath(comp)
+	log.Verbose("Build called for component '%s'", comp)
+	var imageFull string
+	if !cut.flags.Latest {
+		//compHash := cut.CompHash(comp)
+		imageFull = cut.imageStringFull(comp, "")
+	} else {
+		compTagOverride := "latest"
+		imageFull = cut.imageStringFull(comp, compTagOverride)
+		cut.flags.Force = true
+	}
+
+	image := cut.imageString(comp)
+
+	_, err := os.Stat(compAbsPath)
+	if err != nil {
+		log.Fatal("Error opening component dir '%s': %v", comp, err)
+	}
+
+	packClient := cut.PackClient()
+
+	if !cut.flags.Force {
+		log.Verbose("Checking if image already exists in registry")
+		// TODO: check if image already exists in registry, if so skip build and return hash
+	}
+	now := time.Now()
+	buildOpts := pack.BuildOptions{
+		Interactive:  false,
+		AppPath:      compAbsPath,
+		Image:        imageFull,
+		Builder:      cut.flags.Builder,
+		CreationTime: &now,
+		Publish:      cut.flags.PublishImage,
+		ClearCache:   true,
+	}
+
+	log.Info("Building image '%s' for component '%s'", image, compAbsPath)
+	if err := packClient.Build(context.Background(), buildOpts); err != nil {
+		log.Fatal("Error building: %v", err)
+	}
+
+	return imageFull
+}
+
+func (cut *CmdUtils) ListComps() []string {
+	files, err := os.ReadDir(cut.CompMainPath())
+	compList := []string{}
+	if err != nil {
+		log.Fatal("Error reading component directories", err)
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			compList = append(compList, file.Name())
+		}
+	}
+	return compList
+}
+func (cut *CmdUtils) PackClient() *pack.Client {
+	if cut.packClient != nil {
+		return cut.packClient
+	}
+
+	packClient, err := pack.NewClient(pack.WithLogger(log.NewPackLogger()))
+	if err != nil {
+		log.Fatal("Error creating Buildpack client: %v", err)
+	}
+
+	cut.packClient = packClient
+	return cut.packClient
+}
+
+func (cut *CmdUtils) BuildAllComps() {
+	log.Info("Building All Components for %s", cut.system)
+	for _, comp := range cut.ListComps() {
+		log.Info("Build and Publish Component: %s", comp)
+		cut.BuildComp(comp)
+	}
+}
+
+func (cut *CmdUtils) GenerateSysObj() *v1alpha1.System {
+
+	sr := maker.New[v1alpha1.System](maker.Props{Name: cut.System()})
+	sr.GitRepo = cut.GitRepoURL()
+	sr.GitHash = cut.GitRefHashShort()
+	sr.Message = cut.flags.Message
+	sr.GitRef = cut.GitRefName()
+	appDirPath := filepath.Join(cut.SysRepoPath(), "apps")
+	appDir, err := os.ReadDir(appDirPath)
+	if err != nil {
+		log.Fatal("Error listing application dirs '%s': %v", appDirPath, err)
+	}
+
+	apps := map[string]*common.App{}
+	for _, appDir := range appDir {
+		if !appDir.IsDir() {
+			continue
+		}
+
+		appName := appDir.Name()
+		appYamlPath := filepath.Join(appDirPath, appName, "application.yaml")
+		appYaml, err := os.ReadFile(appYamlPath)
+		if err != nil {
+			log.Fatal("Error reading application yaml '%s': %v", appYamlPath, err)
+		}
+
+		app := &common.App{}
+		err = yaml.Unmarshal(appYaml, &app)
+		if err != nil {
+			log.Fatal("Error parsing application yaml '%s': %v", appYamlPath, err)
+		}
+		app.GitHash = cut.PathHashShort(fmt.Sprintf("apps/%s/", appName))
+		for compName, comp := range app.Components {
+			comp.GitHash = cut.CompHashShort(compName)
+			comp.Image = cut.imageStringFull(compName, "")
+			comp.Type = "kubefox"
+		}
+
+		apps[appName] = app
+	}
+	sr.Apps = apps
+
+	return sr
+}
+
+func (cut *CmdUtils) imageString(comp string) string {
+
+	image := fmt.Sprintf("%s/%s/%s", cut.Org(), cut.System(), comp)
+	if cut.flags.Registry != "" {
+		image = fmt.Sprintf("%s/%s", cut.flags.Registry, image)
+	}
+	return image
+}
+
+func (cut *CmdUtils) imageStringFull(comp string, override string) string {
+	var compHash string
+	if override != "" {
+		compHash = override
+	} else {
+		compHash = cut.CompHashShort(comp)
+	}
+	image := fmt.Sprintf("%s/%s/%s:%s", cut.Org(), cut.System(), comp, compHash)
+	if cut.flags.Registry != "" {
+
+		image = fmt.Sprintf("%s/%s", cut.flags.Registry, image)
+	}
+	return image
+}
