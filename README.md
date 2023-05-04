@@ -1,5 +1,8 @@
 # KubeFox CLI (Fox)
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/xigxog/kubefox-cli](https://goreportcard.com/report/github.com/xigxog/kubefox-cli>)
+
+
 CLI for interacting with the KubeFox platform.
 
 ## Synopsis
