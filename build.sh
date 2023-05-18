@@ -2,8 +2,8 @@
 
 set -e
 
-GOARCH=amd64
-GOOS=${1:-"linux"}
+export GOARCH=amd64
+export GOOS=${1:-"linux"}
 build_dir=${2:-"bin"}
 rel_dir=${3:-"release"}
 version=${4:-$VERSION}
