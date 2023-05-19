@@ -1,4 +1,4 @@
-name: Build plugin binary
+name: Build binary
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-binary:
-    name: Build plugin binary
+    name: Build binary
     runs-on: ubuntu-latest
     permissions:
       contents: write

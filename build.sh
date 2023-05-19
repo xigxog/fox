@@ -7,12 +7,12 @@ export GOOS=${1:-"linux"}
 build_dir=${2:-"bin"}
 rel_dir=${3:-"release"}
 version=${4:-$VERSION}
-
 bin="fox"
+tar="${bin}-${version}-${GOOS}-${GOARCH}.tar.gz"
+
 if [ "$GOOS" == "windows" ]; then
     bin="fox.exe"
 fi
-tar="${bin}-${version}-${GOOS}-${GOARCH}.tar.gz"
 
 if [ -z "${version}" ]; then
     echo "Environment variable VERSION must be set for release target"
