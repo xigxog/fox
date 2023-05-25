@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"github.com/buildpacks/pack/pkg/image"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/xigxog/kubefox-cli/internal/config"
 	"github.com/xigxog/kubefox-cli/internal/log"
 	"github.com/xigxog/kubefox/libs/core/api/admin/v1alpha1"
@@ -69,6 +71,14 @@ func (r *repo) CommitAll(msg string) string {
 }
 
 func (r *repo) BuildComp(comp string) string {
+	// replace default keychain to use GitHub token for registry authentication
+	kc := &kubefoxKeychain{
+		defaultKeychain: authn.DefaultKeychain,
+		registry:        config.Flags.Registry,
+		authToken:       base64.StdEncoding.EncodeToString([]byte("kubefox:" + r.cfg.GitHub.Token)),
+	}
+	authn.DefaultKeychain = kc
+
 	path := filepath.Join(r.path, "components", comp)
 	if _, err := os.Stat(path); err != nil {
 		log.Fatal("Error opening component dir '%s': %v", path, err)

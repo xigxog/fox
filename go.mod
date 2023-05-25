@@ -6,7 +6,10 @@ require (
 	github.com/buildpacks/pack v0.27.0
 	github.com/cli/oauth v1.0.1
 	github.com/go-git/go-git/v5 v5.6.1
+	github.com/google/go-containerregistry v0.9.0
 	github.com/spf13/cobra v1.7.0
+	github.com/spf13/pflag v1.0.5
+	github.com/spf13/viper v1.7.1
 	github.com/xigxog/kubefox/libs/core v0.1.1-alpha
 	go.uber.org/zap v1.24.0
 	sigs.k8s.io/yaml v1.3.0
@@ -65,6 +68,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.10.2 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
+	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gdamore/encoding v1.0.0 // indirect
 	github.com/gdamore/tcell/v2 v2.5.1 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
@@ -83,10 +87,10 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/go-containerregistry v0.9.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gravitational/trace v1.2.1 // indirect
+	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/heroku/color v0.0.6 // indirect
 	github.com/imdario/mergo v0.3.15 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -105,12 +109,14 @@ require (
 	github.com/lestrrat-go/jwx v1.2.25 // indirect
 	github.com/lestrrat-go/option v1.0.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
+	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/ioprogress v0.0.0-20180201004757-6a23b12fa88e // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/sys/mount v0.3.2 // indirect
 	github.com/moby/sys/mountinfo v0.6.1 // indirect
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
@@ -122,6 +128,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.0-rc3 // indirect
 	github.com/opencontainers/runc v1.1.5 // indirect
 	github.com/opencontainers/selinux v1.10.1 // indirect
+	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rivo/tview v0.0.0-20220307222120-9994674d60a8 // indirect
@@ -131,8 +138,11 @@ require (
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/skeema/knownhosts v1.1.1 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/afero v1.4.1 // indirect
+	github.com/spf13/cast v1.3.1 // indirect
+	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/src-d/gcfg v1.4.0 // indirect
+	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/vbatts/tar-split v0.11.2 // indirect
 	github.com/vulcand/predicate v1.2.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
@@ -156,6 +166,7 @@ require (
 	google.golang.org/grpc v1.54.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
+	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/src-d/go-billy.v4 v4.3.2 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect

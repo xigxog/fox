@@ -5,32 +5,12 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "setup",
-      "type": "go",
-      "request": "launch",
-      "mode": "auto",
-      "program": "main.go",
-      "args": ["config", "setup"]
-    },
-    {
-      "name": "create",
-      "type": "go",
-      "request": "launch",
-      "mode": "auto",
-      "program": "main.go",
-      "args": [
-        "create",
-        "--verbose",
-        "--filename=../controller/hack/resources/config-dev.json"
-      ]
-    },
-    {
       "name": "list",
       "type": "go",
       "request": "launch",
       "mode": "auto",
       "program": "main.go",
-      "args": ["get", "--verbose", "config"]
+      "args": ["get", "--verbose", "environment"]
     },
     {
       "name": "get head",
@@ -38,19 +18,7 @@
       "request": "launch",
       "mode": "auto",
       "program": "main.go",
-      "args": ["get", "--verbose", "config/dev"]
-    },
-    {
-      "name": "get id",
-      "type": "go",
-      "request": "launch",
-      "mode": "auto",
-      "program": "main.go",
-      "args": [
-        "get",
-        "--verbose",
-        "config/dev/id/261d831f-b9f9-4961-a3dd-13fc9dbd20be"
-      ]
+      "args": ["get", "--verbose", "environment/dev"]
     },
     {
       "name": "get tag",
@@ -58,7 +26,7 @@
       "request": "launch",
       "mode": "auto",
       "program": "main.go",
-      "args": ["get", "--verbose", "config/dev/tag/v1.0"]
+      "args": ["get", "--verbose", "environment/dev/tag/v1"]
     },
     {
       "name": "apply",
@@ -69,7 +37,7 @@
       "args": [
         "apply",
         "--verbose",
-        "--filename=/home/xadhatter/Workspace/src/github.com/xadhatter-org/demo/hack/env.yaml"
+        "--filename=$KUBEFOX_SYSTEM_REPO/hack/env.yaml"
       ]
     },
     {
@@ -86,11 +54,7 @@
       "request": "launch",
       "mode": "auto",
       "program": "main.go",
-      "args": [
-        "init",
-        "--verbose",
-        "--system-repo=/home/xadhatter/Workspace/src/github.com/xadhatter-org/demo"
-      ]
+      "args": ["init", "--verbose"]
     },
     {
       "name": "build",
@@ -98,12 +62,7 @@
       "request": "launch",
       "mode": "auto",
       "program": "main.go",
-      "args": [
-        "build",
-        "--verbose",
-        "--system-repo=/home/xadhatter/Workspace/src/github.com/xadhatter-org/demo",
-        "hello"
-      ]
+      "args": ["build", "--verbose", "--publish", "hello"]
     },
     {
       "name": "generate",
@@ -111,11 +70,7 @@
       "request": "launch",
       "mode": "auto",
       "program": "main.go",
-      "args": [
-        "generate",
-        "--verbose",
-        "--system-repo=/home/xadhatter/Workspace/src/github.com/xadhatter-org/demo"
-      ]
+      "args": ["generate", "--verbose"]
     }
   ]
 }
