@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"github.com/buildpacks/pack/pkg/logging"
-	"github.com/xigxog/kubefox/libs/core/logger"
+	"github.com/xigxog/kubefox/libs/core/logkf"
 )
 
 func NewPackLogger() logging.Logger {
 	l := Logger().Named("buildpack")
 	return &packLogger{
-		logger: l,
+		log: l,
 		writer: &writer{
 			log: l,
 		},
@@ -19,7 +19,7 @@ func NewPackLogger() logging.Logger {
 }
 
 type packLogger struct {
-	logger *logger.Log
+	log    *logkf.Logger
 	writer io.Writer
 }
 
@@ -28,7 +28,7 @@ type packLogger struct {
 // prevents that by hiding the underlying writer. Also cleans up all the extra
 // newlines and spacing.
 type writer struct {
-	log *logger.Log
+	log *logkf.Logger
 }
 
 // Removes all extra spaces before writing.
@@ -39,35 +39,35 @@ func (w *writer) Write(p []byte) (n int, err error) {
 }
 
 func (l *packLogger) Debug(msg string) {
-	l.logger.Debugf(msg)
+	l.log.Debugf(msg)
 }
 
 func (l *packLogger) Debugf(format string, v ...interface{}) {
-	l.logger.Debugf(format, v...)
+	l.log.Debugf(format, v...)
 }
 
 func (l *packLogger) Info(msg string) {
-	l.logger.Debugf(msg)
+	l.log.Debugf(msg)
 }
 
 func (l *packLogger) Infof(format string, v ...interface{}) {
-	l.logger.Debugf(format, v...)
+	l.log.Debugf(format, v...)
 }
 
 func (l *packLogger) Warn(msg string) {
-	l.logger.Debugf(msg)
+	l.log.Debugf(msg)
 }
 
 func (l *packLogger) Warnf(format string, v ...interface{}) {
-	l.logger.Debugf(format, v...)
+	l.log.Debugf(format, v...)
 }
 
 func (l *packLogger) Error(msg string) {
-	l.logger.Debugf(msg)
+	l.log.Debugf(msg)
 }
 
 func (l *packLogger) Errorf(format string, v ...interface{}) {
-	l.logger.Debugf(format, v...)
+	l.log.Debugf(format, v...)
 }
 
 func (l *packLogger) Writer() io.Writer {

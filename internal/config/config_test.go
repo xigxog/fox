@@ -25,7 +25,6 @@ func TestConfig_Validation(t *testing.T) {
 			Token: "token",
 		},
 		KubeFox: KubeFox{
-			URL:      "https://github.com",
 			Platform: "platform",
 		},
 	}

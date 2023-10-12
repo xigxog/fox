@@ -5,34 +5,37 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/xigxog/kubefox/libs/core/admin"
-	"github.com/xigxog/kubefox/libs/core/logger"
-	"go.uber.org/zap"
+	"github.com/xigxog/kubefox/libs/core/logkf"
+	"go.uber.org/zap/zapcore"
 	"sigs.k8s.io/yaml"
 )
 
 var (
-	log    *logger.Log = logger.CLILogger().Named("fox")
-	outFmt string      = "json"
+	log    *logkf.Logger = logkf.BuildLoggerOrDie("cli", "debug")
+	outFmt string        = "json"
 )
 
 func Setup(fmt string, verbose bool) {
 	if !verbose {
-		log = log.IncreaseLevel(zap.InfoLevel)
+		log = log.IncreaseLevel(zapcore.InfoLevel)
 	}
 	outFmt = fmt
 }
 
-func Logger() *logger.Log {
+func Logger() *logkf.Logger {
 	return log
 }
 
-func Print(format string, v ...any) {
-	fmt.Println(fmt.Sprintf(format, v...))
+func Printf(format string, v ...any) {
+	fmt.Printf(format, v...)
 }
 
 func Marshal(o any) {
-	fmt.Println(marshal(o))
+	fmt.Print(marshal(o))
+}
+
+func Newline() {
+	fmt.Fprintln(os.Stderr)
 }
 
 func Info(format string, v ...any) {
@@ -65,39 +68,6 @@ func Fatal(format string, v ...any) {
 	format = "😖 " + format
 	log.Errorf(format, v...)
 	os.Exit(1)
-}
-
-func VerboseResp(resp *admin.Response, err error) {
-	printResp(resp, err, true)
-}
-func Resp(resp *admin.Response, err error) {
-	printResp(resp, err, false)
-}
-
-func printResp(resp *admin.Response, err error, verboseOnly bool) {
-	if err != nil {
-		resp = &admin.Response{
-			IsError: true,
-			Msg:     err.Error(),
-		}
-	}
-	if resp == nil {
-		Fatal("Invalid response received")
-	}
-
-	VerboseMarshal(resp, "Response from KubeFox Admin API")
-
-	if !verboseOnly {
-		if resp.IsError {
-			Marshal(resp)
-		} else if resp.Data != nil {
-			Marshal(resp.Data)
-		}
-	}
-
-	if resp.IsError {
-		Fatal("Command resulted in error: %s", resp.Msg)
-	}
 }
 
 func marshal(o any) string {

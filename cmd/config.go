@@ -28,7 +28,9 @@ var cfgSetupCmd = &cobra.Command{
 	Use:  "setup",
 	Args: cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg.Setup()
+		if !cfg.Fresh {
+			cfg.Setup()
+		}
 	},
 	Short: "Update your current KubeFox configuration",
 }

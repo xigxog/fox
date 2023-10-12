@@ -1,43 +1,66 @@
 package repo
 
 import (
-	"context"
-	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	pack "github.com/buildpacks/pack/pkg/client"
-	"github.com/buildpacks/pack/pkg/image"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/xigxog/kubefox-cli/internal/config"
+	"github.com/xigxog/kubefox-cli/internal/kubernetes"
 	"github.com/xigxog/kubefox-cli/internal/log"
-	"github.com/xigxog/kubefox/libs/core/api/admin/v1alpha1"
-	"github.com/xigxog/kubefox/libs/core/api/common"
-	"github.com/xigxog/kubefox/libs/core/api/maker"
-	"github.com/xigxog/kubefox/libs/core/validator"
-	"sigs.k8s.io/yaml"
+	"github.com/xigxog/kubefox-cli/internal/utils"
+	"gopkg.in/yaml.v2"
 )
 
 type repo struct {
 	cfg  *config.Config
+	app  *App
 	path string
 
 	gitRepo *git.Repository
+	k8s     *kubernetes.Client
 	pack    *pack.Client
 }
 
-func New(cfg *config.Config) *repo {
-	path := config.Flags.SysRepoPath
-	log.Verbose("Opening git repo '%s'", path)
+type App struct {
+	Title             string `json:"title,omitempty"`
+	Description       string `json:"description,omitempty"`
+	Name              string `json:"name"`
+	ContainerRegistry string `json:"containerRegistry,omitempty"`
+}
 
+func ReadApp(repoPath string) (*App, error) {
+	log.Verbose("Reading app definition '%s/app.yaml'", repoPath)
+	b, err := os.ReadFile(filepath.Join(repoPath, "app.yaml"))
+	if err != nil {
+		return nil, err
+	}
+	app := &App{}
+	if err := yaml.Unmarshal(b, app); err != nil {
+		return nil, err
+	}
+	if app.Name == "" || app.Name != utils.Clean(app.Name) {
+		return nil, fmt.Errorf("invalid app name")
+	}
+	return app, nil
+}
+
+func New(cfg *config.Config) *repo {
+	path := config.Flags.RepoPath
+
+	app, err := ReadApp(path)
+	if err != nil {
+		log.Fatal("Error reading the Repo's 'app.yaml', try running 'fox init': %v", err)
+	}
+
+	log.Verbose("Opening git repo '%s'", path)
 	gitRepo, err := git.PlainOpen(path)
 	if err != nil {
-		log.Fatal("Error opening system git repo '%s': %v", path, err)
+		log.Fatal("Error opening git repo '%s': %v", path, err)
 	}
 
 	pack, err := pack.NewClient(pack.WithLogger(log.NewPackLogger()))
@@ -47,8 +70,10 @@ func New(cfg *config.Config) *repo {
 
 	return &repo{
 		cfg:     cfg,
+		app:     app,
 		path:    path,
 		gitRepo: gitRepo,
+		k8s:     kubernetes.NewClient(),
 		pack:    pack,
 	}
 }
@@ -65,108 +90,22 @@ func (r *repo) CommitAll(msg string) string {
 	if err != nil {
 		log.Fatal("Error committing changes: %v", err)
 	}
-	log.Verbose("Changes committed; hash: %s", hash)
+	log.Verbose("Changes committed; commit hash '%s'", hash)
 
 	return hash.String()
 }
 
-func (r *repo) BuildComp(comp string) string {
-	// replace default keychain to use GitHub token for registry authentication
-	kc := &kubefoxKeychain{
-		defaultKeychain: authn.DefaultKeychain,
-		registry:        config.Flags.Registry,
-		authToken:       base64.StdEncoding.EncodeToString([]byte("kubefox:" + r.cfg.GitHub.Token)),
-	}
-	authn.DefaultKeychain = kc
-
-	path := filepath.Join(r.path, "components", comp)
-	if _, err := os.Stat(path); err != nil {
-		log.Fatal("Error opening component dir '%s': %v", path, err)
-	}
-
-	now := time.Now()
-	img := r.GetContainerImage(comp)
-	buildOpts := pack.BuildOptions{
-		Interactive:  false,
-		CreationTime: &now,
-		AppPath:      path,
-		Image:        img,
-		Builder:      config.Flags.Builder,
-		Publish:      config.Flags.PublishImage,
-		ClearCache:   config.Flags.ClearCache,
-		PullPolicy:   image.PullIfNotPresent,
-	}
-
-	log.Info("Building image '%s' for component '%s'", img, comp)
-	if err := r.pack.Build(context.Background(), buildOpts); err != nil {
-		log.Fatal("Error building component: %v", err)
-	}
-
-	return img
-}
-
-func (r *repo) GenerateSysObj() *v1alpha1.System {
-	org := r.cfg.GitHub.Org.Name
-	sys := config.Flags.System
-
-	appDirPath := filepath.Join(config.Flags.SysRepoPath, "apps")
-	appDir, err := os.ReadDir(appDirPath)
-	if err != nil {
-		log.Fatal("Error listing app dirs '%s': %v", appDirPath, err)
-	}
-
-	sysObj := maker.New[v1alpha1.System](maker.Props{Name: config.Flags.System})
-	sysObj.GitRepo = fmt.Sprintf("https://github.com/%s/%s.git", org, sys)
-	sysObj.GitRef = r.GetRefName()
-	sysObj.GitHash = r.GetHash("")
-	sysObj.Message = config.Flags.Msg
-
-	apps := map[string]*common.App{}
-	for _, appDir := range appDir {
-		if !appDir.IsDir() {
-			continue
-		}
-
-		appName := appDir.Name()
-		appYamlPath := filepath.Join(appDirPath, appName, "app.yaml")
-		appYaml, err := os.ReadFile(appYamlPath)
-		if err != nil {
-			log.Fatal("Error reading app yaml '%s': %v", appYamlPath, err)
-		}
-		app := &common.App{}
-		err = yaml.Unmarshal(appYaml, app)
-		if err != nil {
-			log.Fatal("Error parsing app yaml '%s': %v", appYamlPath, err)
-		}
-		app.GitHash = r.GetHash("apps/" + appName)
-
-		for compName, comp := range app.Components {
-			comp.GitHash = r.GetCompHash(compName)
-			comp.Image = r.GetContainerImage(compName)
-		}
-
-		apps[appName] = app
-	}
-	sysObj.Apps = apps
-
-	sysObj.Id = "na"
-	v := validator.New(log.Logger())
-	if errs := v.Validate(sysObj); errs != nil {
-		log.Marshal(errs)
-		log.Fatal("System object is not valid")
-	}
-	sysObj.Id = ""
-
-	return sysObj
-}
-
 func (r *repo) GetContainerImage(comp string) string {
-	org := r.cfg.GitHub.Org.Name
-	reg := config.Flags.Registry
-	sys := config.Flags.System
-	hash := r.GetCompHash(comp)
+	return fmt.Sprintf("%s/%s/%s:%s", r.cfg.ContainerRegistry.Address, r.app.Name, comp, r.GetCompCommit(comp))
+}
 
-	return fmt.Sprintf("%s/%s/%s/%s:%s", reg, org, sys, comp, hash)
+func (r *repo) GetRepoURL() string {
+	o, err := r.gitRepo.Remote("origin")
+	if err != nil || len(o.Config().URLs) == 0 {
+		return ""
+	}
+
+	return o.Config().URLs[0]
 }
 
 func (r *repo) GetRefName() string {
@@ -195,13 +134,13 @@ func (r *repo) GetRefName() string {
 	return refName
 }
 
-func (r *repo) GetCompHash(comp string) string {
-	return r.GetHash(filepath.Join("components", comp))
+func (r *repo) GetCompCommit(comp string) string {
+	return r.GetCommit(filepath.Join("components", comp))
 }
 
-func (r *repo) GetHash(subPath string) string {
+func (r *repo) GetCommit(subPath string) string {
 	if !r.IsClean() {
-		log.Fatal("Error finding hash: uncommitted changes present")
+		log.Fatal("Error finding commit hash: uncommitted changes present")
 	}
 
 	path := filepath.Join(r.path, subPath)
@@ -211,15 +150,15 @@ func (r *repo) GetHash(subPath string) string {
 		},
 	})
 	if err != nil {
-		log.Fatal("Error finding hash for path '%s': %v", path, err)
+		log.Fatal("Error finding commit hash for path '%s': %v", path, err)
 	}
 
 	commit, err := iter.Next()
 	if err != nil {
-		log.Fatal("Error finding hash for path '%s': %v", path, err)
+		log.Fatal("Error finding commit hash for path '%s': %v", path, err)
 	}
 	if commit == nil {
-		log.Fatal("Error finding hash for path '%s': no commits have been made", path)
+		log.Fatal("Error finding commit hash for path '%s': no commits have been made", path)
 	}
 
 	return commit.Hash.String()[0:7]

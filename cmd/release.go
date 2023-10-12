@@ -3,14 +3,12 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/xigxog/kubefox-cli/internal/log"
-	"github.com/xigxog/kubefox/libs/core/api/admin/v1alpha1"
-	"github.com/xigxog/kubefox/libs/core/api/maker"
-	"github.com/xigxog/kubefox/libs/core/api/uri"
+	"github.com/xigxog/kubefox-cli/internal/repo"
 )
 
 var releaseCmd = &cobra.Command{
-	Use:    "release",
-	Args:   cobra.NoArgs,
+	Use:    "release [name]",
+	Args:   cobra.ExactArgs(1),
 	PreRun: setup,
 	Run:    release,
 	Short:  "Release a deployed system",
@@ -27,33 +25,22 @@ Examples:
 }
 
 func init() {
-	releaseCmd.Flags().StringVar(&flags.System, "system", "", "System to release (required)")
-	releaseCmd.Flags().StringVarP(&flags.Env, "environment", "e", "", "Environment to release to (required)")
-
-	releaseCmd.MarkFlagRequired("system")
+	releaseCmd.Flags().StringVarP(&flags.Env, "env", "e", "", "Environment resource to release to (required)")
+	releaseCmd.Flags().StringVarP(&flags.Env, "env-uid", "", "", "Environment resource UID to release to")
+	releaseCmd.Flags().StringVarP(&flags.Env, "env-version", "", "", "Environment resource version to release to")
+	addCommonBuildFlags(releaseCmd)
 	releaseCmd.MarkFlagRequired("environment")
 
 	rootCmd.AddCommand(releaseCmd)
 }
 
 func release(cmd *cobra.Command, args []string) {
-	sysURI, err := uri.New(cfg.GitHub.Org.Name, uri.System, flags.System)
-	if err != nil {
-		log.Fatal("Error creating system URI: %v", err)
-	}
-	envURI, err := uri.New(cfg.GitHub.Org.Name, uri.Environment, flags.Env)
-	if err != nil {
-		log.Fatal("Error creating environment URI: %v", err)
-	}
+	name := args[0]
+	checkCommonDeployFlags(name)
 
-	release := maker.Empty[v1alpha1.Release]()
-	release.System = string(sysURI.Key())
-	release.Environment = string(envURI.Key())
-	u, err := uri.New(cfg.GitHub.Org.Name, uri.Platform, cfg.KubeFox.Platform, uri.Release)
-	if err != nil {
-		log.Fatal("Error creating release URI: %v", err)
-	}
-
-	registerSystem()
-	log.Resp(admCli.Create(u, release))
+	r := repo.New(cfg)
+	rel := r.Release(name)
+	// Makes output less cluttered.
+	rel.ManagedFields = nil
+	log.Marshal(rel)
 }

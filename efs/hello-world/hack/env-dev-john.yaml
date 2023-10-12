@@ -1,0 +1,8 @@
+apiVersion: kubefox.xigxog.io/v1alpha1
+kind: Environment
+metadata:
+  name: dev-john
+  title: Development
+  description: An example environment to use with the KubeFox hello-world app.
+vars:
+  who: John

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -16,38 +15,42 @@ import (
 	"github.com/cli/oauth/device"
 	"github.com/xigxog/kubefox-cli/internal/log"
 	"github.com/xigxog/kubefox-cli/internal/utils"
-	"github.com/xigxog/kubefox/libs/core/admin"
-	"github.com/xigxog/kubefox/libs/core/api/uri"
-	"github.com/xigxog/kubefox/libs/core/validator"
 	"sigs.k8s.io/yaml"
 )
 
-const clientId = "c19364e47478c620b1b3"
+const (
+	LocalRegistry  = "localhost/kubefox"
+	GitHubClientId = "a76b4dc61b6fec162ef6"
+)
 
 type Config struct {
-	GitHub  GitHub  `json:"github" validate:"required"`
-	KubeFox KubeFox `json:"kubefox" validate:"required"`
+	GitHub            GitHub            `json:"github"`
+	KubeFox           KubeFox           `json:"kubefox"`
+	Kind              Kind              `json:"kind"`
+	ContainerRegistry ContainerRegistry `json:"containerRegistry"`
+
+	Fresh bool `json:"-"`
 
 	path string
 }
 
 type GitHub struct {
-	Org   GitHubOrg  `json:"org" validate:"required"`
-	User  GitHubUser `json:"user" validate:"required"`
-	Token string     `json:"token" validate:"required"`
+	Org   GitHubOrg  `json:"org"`
+	User  GitHubUser `json:"user"`
+	Token string     `json:"token"`
 }
 
 type GitHubUser struct {
-	Id        int    `json:"id" validate:"required"`
-	Name      string `json:"login" validate:"required"`
-	AvatarURL string `json:"avatar_url" validate:"required,url"`
-	URL       string `json:"html_url" validate:"required,url"`
+	Id        int    `json:"id"`
+	Name      string `json:"login"`
+	AvatarURL string `json:"avatar_url" validate:"url"`
+	URL       string `json:"html_url" validate:"url"`
 }
 
 type GitHubOrg struct {
-	Id   int    `json:"id" validate:"required"`
-	Name string `json:"login" validate:"required"`
-	URL  string `json:"url" validate:"required,url"`
+	Id   int    `json:"id"`
+	Name string `json:"login"`
+	URL  string `json:"url" validate:"url"`
 }
 
 type GitHubError struct {
@@ -56,8 +59,18 @@ type GitHubError struct {
 }
 
 type KubeFox struct {
-	URL      string `json:"url" validate:"required,url"`
-	Platform string `json:"platform" validate:"required"`
+	Namespace string `json:"namespace"`
+	Platform  string `json:"platform"`
+}
+
+type Kind struct {
+	ClusterName string `json:"clusterName"`
+	AlwaysLoad  bool   `json:"alwaysLoad"`
+}
+
+type ContainerRegistry struct {
+	Address string `json:"address" validate:"required"`
+	Token   string `json:"token"`
 }
 
 func Load() *Config {
@@ -72,16 +85,21 @@ func Load() *Config {
 	cfg := &Config{path: path}
 	b, err := os.ReadFile(path)
 	if errors.Is(err, fs.ErrNotExist) {
+		log.Info("It looks like this is the first time you are using Fox. Welcome!")
+		log.Newline()
+
 		cfg.Setup()
 	} else if err != nil {
 		log.Fatal("Error reading KubeFox config file: %v", err)
-	} else if err := yaml.Unmarshal(b, &cfg); err != nil {
+	}
+	if err := yaml.Unmarshal(b, cfg); err != nil {
 		log.Fatal("Error unmarshaling KubeFox config: %v", err)
 	}
+	if cfg.ContainerRegistry.Address == "" {
+		log.Info("It looks like the container registry is missing from your config. Rerunning")
+		log.Info("setup to fix the issue.")
+		log.Newline()
 
-	v := validator.New(log.Logger())
-	if errs := v.Validate(cfg); errs != nil {
-		log.VerboseMarshal(errs, "Config is not valid")
 		cfg.Setup()
 	}
 
@@ -89,116 +107,116 @@ func Load() *Config {
 }
 
 func (cfg *Config) Setup() {
-	// write is called after each step so values are not lost on next run
-	cfg.setupGitHub()
-	cfg.Write()
+	log.Info("Please make sure your workstation has Docker installed (https://docs.docker.com/engine/install)")
+	log.Info("and that KubeFox is installed (https://docs.kubefox.io/install) on your Kubernetes cluster.")
+	log.Newline()
+	log.Info("If you don't have a Kubernetes cluster you can run one locally with Kind (https://kind.sigs.k8s.io)")
+	log.Info("to experiment with KubeFox.")
+	log.Newline()
+	log.Info("Fox needs a place to store the KubeFox Component images it will build, normally")
+	log.Info("this is a remote container registry. However, if you only want to use KubeFox")
+	log.Info("locally with Kind you can skip this step.")
+	kindOnly := utils.YesNoPrompt("Are you only using KubeFox locally?", false)
+	if kindOnly {
+		cfg.ContainerRegistry.Address = LocalRegistry
+		cfg.ContainerRegistry.Token = ""
+		cfg.Kind.ClusterName = utils.NamePrompt("Kind cluster", "kubefox", true)
+		cfg.Kind.AlwaysLoad = true
+		cfg.done()
+		return
+	}
 
-	cfg.setupKubeFox()
-	cfg.Write()
+	log.Newline()
+	log.Info("Great! If you don't already have a container registry Fox can help setup the")
+	log.Info("GitHub container registry (ghcr.io).")
+	useGH := utils.YesNoPrompt("Would you like to use ghcr.io?", true)
+	if useGH {
+		cfg.setupGitHub()
+
+	} else {
+		log.Newline()
+		log.Info("No problem. Fox just needs to know which container registry to use. Please be")
+		log.Info("sure you have permissions to pull and push images to the registry.")
+		cfg.ContainerRegistry.Address = utils.InputPrompt("Enter the container registry you'd like to use", "", true)
+		cfg.ContainerRegistry.Token = utils.InputPrompt("Enter the container registry access token", "", false)
+	}
+
+	cfg.done()
 }
 
-func (cfg *Config) Write() {
-	b, err := yaml.Marshal(cfg)
-	if err != nil {
-		log.Fatal("Error marshaling KubeFox config: %v", err)
-	}
+func (cfg *Config) done() {
+	cfg.Fresh = true
+	cfg.Write()
 
-	utils.EnsureDirForFile(cfg.path)
-	if err := os.WriteFile(cfg.path, b, 0600); err != nil {
-		log.Fatal("Error writing KubeFox config file: %v", err)
-	}
+	log.Newline()
+	log.Info("Congrats, you are ready to use KubeFox!")
+	log.Info("Check out the quickstart for next steps (https://docs.kubefox.io/quickstart/).")
+	log.Info("If you run into any problems please let us know on GitHub (https://github.com/xigxog/kubefox/issues).")
+	log.Newline()
 }
 
 func (cfg *Config) setupGitHub() {
-	httpCl := http.DefaultClient
-	scopes := []string{"read:user", "read:org", "read:packages", "write:packages"}
-	code, err := device.RequestCode(httpCl, "https://github.com/login/device/code", clientId, scopes)
-	if err != nil {
-		log.Fatal("%v", err)
-	}
+	log.Newline()
+	log.Info("Fox needs to create two access tokens. The first is used by Fox and is only")
+	log.Info("stored locally. It allows Fox to read your GitHub user and organizations and to")
+	log.Info("push and pull container images to ghcr.io. This information never leaves your")
+	log.Info("workstation.")
+	log.Newline()
+	log.Info("The second access token is used by Kubernetes to pull component images from")
+	log.Info("ghcr.io. It is stored locally and as a Secret on your Kubernetes cluster.")
+	log.Newline()
 
-	log.Info("Fox needs to create a secret to push and pull container images to GitHub Packages.")
-	log.Info("Copy this code '%s', then open '%s' in your browser.", code.UserCode, code.VerificationURI)
-
-	accToken, err := device.Wait(context.Background(), httpCl, "https://github.com/login/oauth/access_token",
-		device.WaitOptions{
-			ClientID:   clientId,
-			DeviceCode: code,
-		})
-	if err != nil {
-		log.Fatal("%v", err)
-	}
-	cfg.GitHub.Token = accToken.Token
+	log.Info("This will create the access token for Fox.")
+	cfg.GitHub.Token = getToken([]string{"read:user", "read:org", "read:packages", "write:packages"})
+	log.Newline()
+	log.Info("Next, this will create the access token for Kubernetes.")
+	crToken := getToken([]string{"read:packages"})
+	log.Newline()
 
 	orgs := []*GitHubOrg{}
-	callGitHub("GET", "https://api.github.com/user/orgs", cfg.GitHub.Token, &orgs)
-	callGitHub("GET", "https://api.github.com/user", cfg.GitHub.Token, &cfg.GitHub.User)
+	cfg.callGitHub("GET", "https://api.github.com/user/orgs", &orgs)
+	cfg.callGitHub("GET", "https://api.github.com/user", &cfg.GitHub.User)
 
 	switch len(orgs) {
 	case 0:
-		log.Fatal("A GitHub organization is required, please set one up. https://bit.ly/3mNYkh1")
+		log.Fatal("Oh no, a GitHub organization is required to use GitHub container registry,")
+		log.Fatal("please create one (https://bit.ly/3mNYkh1) before continuing.")
 	case 1:
 		cfg.GitHub.Org = *orgs[0]
 	default:
 		cfg.GitHub.Org = *pickOrg(orgs)
 	}
+
 	cfg.GitHub.Org.Name = strings.ToLower(cfg.GitHub.Org.Name)
+	cfg.ContainerRegistry.Address = fmt.Sprintf("ghcr.io/%s", cfg.GitHub.Org.Name)
+	cfg.ContainerRegistry.Token = fmt.Sprintf("kubefox:%s", crToken)
 }
 
-func (cfg *Config) setupKubeFox() {
-	// make sure we have needed GitHub config before proceeding
-	v := validator.New(log.Logger())
-	if errs := v.Validate(cfg.GitHub); errs != nil {
-		cfg.setupGitHub()
-	}
-
-	def := "https://127.0.0.1:30443"
-	if cfg.KubeFox.URL != "" {
-		def = cfg.KubeFox.URL
-	}
-	var input string
-	fmt.Printf("Enter the URL of the KubeFox API (default '%s'): ", def)
-	fmt.Scanln(&input)
-	if input == "" {
-		input = def
-	}
-
-	u, err := url.Parse(input)
+func getToken(scopes []string) string {
+	code, err := device.RequestCode(http.DefaultClient, "https://github.com/login/device/code", GitHubClientId, scopes)
 	if err != nil {
-		log.Error("Invalid URL: %v, please try again", err)
-		cfg.setupKubeFox()
-	} else {
-		cfg.KubeFox.URL = u.String()
+		log.Fatal("%v", err)
 	}
-
-	admCl := admin.NewClient(admin.ClientConfig{
-		URL:      cfg.KubeFox.URL,
-		Insecure: true,
-		Log:      log.Logger(),
-	})
-
-	listURI, _ := uri.New(cfg.GitHub.Org.Name, uri.Platform)
-	resp, err := admCl.List(listURI)
+	log.Printf("Copy this code '%s', then open '%s' in your browser.", code.UserCode, code.VerificationURI)
+	log.Newline()
+	accToken, err := device.Wait(context.Background(), http.DefaultClient, "https://github.com/login/oauth/access_token",
+		device.WaitOptions{
+			ClientID:   GitHubClientId,
+			DeviceCode: code,
+		})
 	if err != nil {
-		log.Fatal("Error communicating with KubeFox API: %v", err)
+		log.Fatal("%v", err)
 	}
 
-	list, ok := resp.Data.([]any)
-	if !ok {
-		log.Fatal("Unexpected response from KubeFox API")
-	}
-	if len(list) != 1 {
-		log.Fatal("Unexpected response from KubeFox API")
-	}
-	cfg.KubeFox.Platform = fmt.Sprintf("%s", list[0])
+	return accToken.Token
 }
 
 func pickOrg(orgs []*GitHubOrg) *GitHubOrg {
 	for i, o := range orgs {
-		fmt.Printf("%d. %s\n", i+1, o.Name)
+		log.Printf("%d. %s\n", i+1, o.Name)
 	}
 	var input string
-	fmt.Printf("Select the GitHub org to use (default 1): ")
+	log.Printf("Select the GitHub organization to use (default 1): ")
 	fmt.Scanln(&input)
 	if input == "" {
 		input = "1"
@@ -215,13 +233,25 @@ func pickOrg(orgs []*GitHubOrg) *GitHubOrg {
 	return orgs[i]
 }
 
-func callGitHub(verb, url, token string, body any) {
+func (cfg *Config) Write() {
+	b, err := yaml.Marshal(cfg)
+	if err != nil {
+		log.Fatal("Error marshaling KubeFox config: %v", err)
+	}
+
+	utils.EnsureDirForFile(cfg.path)
+	if err := os.WriteFile(cfg.path, b, 0600); err != nil {
+		log.Fatal("Error writing KubeFox config file: %v", err)
+	}
+}
+
+func (cfg *Config) callGitHub(verb, url string, body any) {
 	req, err := http.NewRequest(verb, url, nil)
 	if err != nil {
 		log.Fatal("Error calling GitHub: %v", err)
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Authorization", "Bearer "+cfg.GitHub.Token)
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
 
 	resp, err := http.DefaultClient.Do(req)

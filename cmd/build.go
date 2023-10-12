@@ -28,7 +28,7 @@ func init() {
 }
 
 func addCommonBuildFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&flags.Registry, "registry", "g", "ghcr.io", "OCI image registry to publish images to")
+	cmd.Flags().StringVarP(&flags.Kind, "kind", "k", "", "if provided the built image will be loaded into the Kind cluster")
 	cmd.Flags().StringVarP(&flags.Builder, "builder", "b", "paketobuildpacks/builder:base", "BuildPack builder to use")
 	cmd.Flags().BoolVarP(&flags.ClearCache, "clear-cache", "c", false, `clear BuildPack cache`)
 }

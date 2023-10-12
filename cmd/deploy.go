@@ -3,54 +3,45 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/xigxog/kubefox-cli/internal/log"
-	"github.com/xigxog/kubefox/libs/core/api/admin/v1alpha1"
-	"github.com/xigxog/kubefox/libs/core/api/maker"
-	"github.com/xigxog/kubefox/libs/core/api/uri"
+	"github.com/xigxog/kubefox-cli/internal/repo"
+	"github.com/xigxog/kubefox-cli/internal/utils"
 )
 
 var deployCmd = &cobra.Command{
-	Use:    "deploy <system path>",
+	Use:    "deploy [name]",
 	Args:   cobra.ExactArgs(1),
 	PreRun: setup,
-	Run:    deployRun,
-	Short:  "Deploy a system to the KubeFox platform",
-	Long: `
-The deploy command runs the components of the specified system on the Kubefox
-platform.
-
-Examples:
-  # Deploys the components of the demo system with the tag v1.0.3
-  fox deploy system/demo/tag/v1.0.3
-
-  # Deploys the components of the demo system with the id 8cc42b131fbb96e8aa298d62bc09a0941b836626
-  fox deploy system/demo/id/8cc42b131fbb96e8aa298d62bc09a0941b836626
-
-  # Deploys the components of the latest version of the demo system
-  fox deploy system/demo
-`,
+	Run:    runDeploy,
+	Short:  "Deploy components to the KubeFox platform",
+	Long:   ``,
 }
 
 func init() {
+	addCommonDeployFlags(deployCmd)
 	rootCmd.AddCommand(deployCmd)
 }
 
-func deployRun(cmd *cobra.Command, args []string) {
-	deploy(getResURI(args))
+func addCommonDeployFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&flags.Platform, "platform", "p", "", "Platform to run Components with")
+	cmd.Flags().StringVarP(&flags.Namespace, "namespace", "n", "", "Namespace of Platform")
 }
 
-func deploy(sysURI uri.URI) {
-	if sysURI.Kind() != uri.System {
-		log.Fatal("Only systems can be deployed")
+func checkCommonDeployFlags(name string) {
+	if flags.Platform != "" && flags.Namespace == "" {
+		log.Fatal("'namespace' flag required if 'platform' flag is provided.")
 	}
-
-	deploy := maker.Empty[v1alpha1.Deployment]()
-	deploy.System = string(sysURI.Key())
-
-	u, err := uri.New(cfg.GitHub.Org.Name, uri.Platform, cfg.KubeFox.Platform, uri.Deployment)
-	if err != nil {
-		log.Fatal("Error creating URI for deployment: %v", err)
+	if name != utils.Clean(name) {
+		log.Fatal("Invalid resource name, valid names contain only lowercase alpha-numeric characters and dashes.")
 	}
+}
 
-	registerSystem()
-	log.Resp(admCli.Create(u, deploy))
+func runDeploy(cmd *cobra.Command, args []string) {
+	name := args[0]
+	checkCommonDeployFlags(name)
+
+	r := repo.New(cfg)
+	d := r.Deploy(name)
+	// Makes output less cluttered.
+	d.ManagedFields = nil
+	log.Marshal(d)
 }
