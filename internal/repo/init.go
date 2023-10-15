@@ -19,7 +19,6 @@ import (
 	"github.com/xigxog/kubefox-cli/internal/config"
 	"github.com/xigxog/kubefox-cli/internal/log"
 	"github.com/xigxog/kubefox-cli/internal/utils"
-	"sigs.k8s.io/yaml"
 )
 
 func Init(cfg *config.Config) {
@@ -34,9 +33,6 @@ func Init(cfg *config.Config) {
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		log.VerboseMarshal(app, "App definition:")
 		log.Info("A valid app definition already exists.")
-		if utils.YesNoPrompt("Would you like to add a component?", true) {
-			addComponent(repoPath)
-		}
 		initGit(repoPath, app, cfg)
 		return
 	}
@@ -63,22 +59,8 @@ func Init(cfg *config.Config) {
 	app.Title = utils.InputPrompt("Enter the app's title", "", false)
 	app.Description = utils.InputPrompt("Enter the app's description", "", false)
 
-	appPath := filepath.Join(repoPath, "app.yaml")
-	b, err := yaml.Marshal(app)
-	if err != nil {
-		log.Fatal("Error marshaling app definition: %v", err)
-	}
-	utils.EnsureDirForFile(appPath)
-	if err := os.WriteFile(appPath, b, 0644); err != nil {
-		log.Fatal("Error writing app definition file: %v", err)
-	}
+	WriteApp(repoPath, app)
 	utils.EnsureDir(filepath.Join(repoPath, ComponentsDirName))
-	utils.EnsureDir(filepath.Join(repoPath, "hack"))
-	utils.EnsureDir(filepath.Join(repoPath, "libs"))
-
-	if utils.YesNoPrompt("Would you like to add a component?", true) {
-		addComponent(repoPath)
-	}
 	initGit(repoPath, app, cfg)
 }
 
@@ -141,13 +123,4 @@ func initDir(in, out string) {
 
 			return nil
 		})
-}
-
-func addComponent(dir string) {
-	name := utils.NamePrompt("component", "", true)
-	initDir(efs.ComponentPath, filepath.Join(dir, ComponentsDirName, name))
-
-	if utils.YesNoPrompt("Would you like to add another component?", false) {
-		addComponent(dir)
-	}
 }

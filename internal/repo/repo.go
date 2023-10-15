@@ -82,6 +82,18 @@ func ReadApp(repoPath string) (*App, error) {
 	return app, nil
 }
 
+func WriteApp(repoPath string, app *App) {
+	appPath := filepath.Join(repoPath, "app.yaml")
+	b, err := yaml.Marshal(app)
+	if err != nil {
+		log.Fatal("Error marshaling app definition: %v", err)
+	}
+	utils.EnsureDirForFile(appPath)
+	if err := os.WriteFile(appPath, b, 0644); err != nil {
+		log.Fatal("Error writing app definition file: %v", err)
+	}
+}
+
 func (r *repo) CommitAll(msg string) string {
 	w, err := r.gitRepo.Worktree()
 	if err != nil {
