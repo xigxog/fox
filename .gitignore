@@ -2,7 +2,7 @@
 *.test
 
 # Debug output
-__debug_bin
+__debug_bin*
 *.out
 
 # Build output

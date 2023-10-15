@@ -4,15 +4,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/xigxog/kubefox-cli/internal/config"
 	"github.com/xigxog/kubefox-cli/internal/log"
-	"github.com/xigxog/kubefox-cli/internal/utils"
 )
 
 func (r *repo) Publish() {
-	config.Flags.PublishImage = true
-
-	compsDirPath := filepath.Join(config.Flags.RepoPath, "components")
+	compsDirPath := filepath.Join(r.cfg.Flags.RepoPath, ComponentsDirName)
 	compsDir, err := os.ReadDir(compsDirPath)
 	if err != nil {
 		log.Fatal("Error listing components dir '%s': %v", compsDirPath, err)
@@ -23,7 +19,6 @@ func (r *repo) Publish() {
 			continue
 		}
 
-		compName := utils.Clean(compDir.Name())
-		r.BuildComp(compName)
+		r.BuildComp(compDir.Name())
 	}
 }

@@ -1,16 +1,19 @@
 package kubernetes
 
 import (
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
 	"context"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/xigxog/kubefox-cli/internal/log"
-	"github.com/xigxog/kubefox/libs/core/api/kubernetes/v1alpha1"
+	"github.com/xigxog/kubefox/libs/api/kubernetes/v1alpha1"
 )
 
 const (
@@ -51,11 +54,4 @@ func (r *Client) ListPlatforms(ctx context.Context) ([]v1alpha1.Platform, error)
 	}
 
 	return pList.Items, nil
-}
-
-func nn(namespace, name string) types.NamespacedName {
-	return types.NamespacedName{
-		Namespace: namespace,
-		Name:      name,
-	}
 }

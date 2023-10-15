@@ -23,7 +23,7 @@ import (
 )
 
 func Init(cfg *config.Config) {
-	repoPath := config.Flags.RepoPath
+	repoPath := cfg.Flags.RepoPath
 
 	app, err := ReadApp(repoPath)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
@@ -44,7 +44,7 @@ func Init(cfg *config.Config) {
 	app = &App{}
 	log.Info("Let's initialize a KubeFox repo!")
 
-	log.Newline()
+	log.InfoNewline()
 	log.Info("To get things started quickly Fox can create a hello-world app which includes")
 	log.Info("two components and example environments for testing.")
 	if utils.YesNoPrompt("Would you like to initialize the hello-world app?", false) {
@@ -53,7 +53,7 @@ func Init(cfg *config.Config) {
 		return
 	}
 
-	log.Newline()
+	log.InfoNewline()
 	log.Info("Fox needs to create an app definition for the repo. The definition is stored in")
 	log.Info("the 'app.yaml' file in the root of the repo. The first thing it needs is a name")
 	log.Info("for the app. The name is used as part of Kubernetes resource names so it must")
@@ -72,7 +72,7 @@ func Init(cfg *config.Config) {
 	if err := os.WriteFile(appPath, b, 0644); err != nil {
 		log.Fatal("Error writing app definition file: %v", err)
 	}
-	utils.EnsureDir(filepath.Join(repoPath, "components"))
+	utils.EnsureDir(filepath.Join(repoPath, ComponentsDirName))
 	utils.EnsureDir(filepath.Join(repoPath, "hack"))
 	utils.EnsureDir(filepath.Join(repoPath, "libs"))
 
@@ -91,12 +91,12 @@ func initGit(repoPath string, app *App, cfg *config.Config) {
 	if err != nil && !alreadyExists {
 		log.Fatal("Error initializing git repo: %v", err)
 	}
+
 	if !alreadyExists {
 		if cfg.GitHub.Org.Name != "" {
 			nr.CreateRemote(&gitcfg.RemoteConfig{
 				Name: "origin",
 				URLs: []string{
-					fmt.Sprintf("git@github.com:%s/%s.git", cfg.GitHub.Org.Name, app.Name),
 					fmt.Sprintf("https://github.com/%s/%s.git", cfg.GitHub.Org.Name, app.Name),
 				},
 			})
@@ -105,7 +105,7 @@ func initGit(repoPath string, app *App, cfg *config.Config) {
 		r.CommitAll("And so it begins...")
 	}
 
-	log.Newline()
+	log.InfoNewline()
 	log.Info("KubeFox repo initialization complete!")
 }
 
@@ -145,7 +145,7 @@ func initDir(in, out string) {
 
 func addComponent(dir string) {
 	name := utils.NamePrompt("component", "", true)
-	initDir(efs.ComponentPath, filepath.Join(dir, "components", name))
+	initDir(efs.ComponentPath, filepath.Join(dir, ComponentsDirName, name))
 
 	if utils.YesNoPrompt("Would you like to add another component?", false) {
 		addComponent(dir)

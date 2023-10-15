@@ -25,11 +25,11 @@ Examples:
 }
 
 func init() {
-	releaseCmd.Flags().StringVarP(&flags.Env, "env", "e", "", "Environment resource to release to (required)")
-	releaseCmd.Flags().StringVarP(&flags.Env, "env-uid", "", "", "Environment resource UID to release to")
-	releaseCmd.Flags().StringVarP(&flags.Env, "env-version", "", "", "Environment resource version to release to")
+	releaseCmd.Flags().StringVarP(&cfg.Flags.Env, "env", "e", "", "Environment resource to release to (required)")
+	releaseCmd.Flags().StringVarP(&cfg.Flags.EnvUID, "env-uid", "", "", "Environment resource UID to release to")
+	releaseCmd.Flags().StringVarP(&cfg.Flags.EnvVersion, "env-version", "", "", "Environment resource version to release to")
 	addCommonBuildFlags(releaseCmd)
-	releaseCmd.MarkFlagRequired("environment")
+	releaseCmd.MarkFlagRequired("env")
 
 	rootCmd.AddCommand(releaseCmd)
 }

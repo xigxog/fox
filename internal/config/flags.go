@@ -1,24 +1,24 @@
 package config
 
-var Flags = &flags{}
-
-type flags struct {
+type Flags struct {
 	// persistent flags defined in root command
 	RepoPath  string
 	OutFormat string
 
+	Info    bool
 	Verbose bool
 
-	// flags used by  subcommands
+	// flags used by subcommands
 	Builder    string
 	Env        string
 	EnvUID     string
 	EnvVersion string
 	Namespace  string
 	Platform   string
-	Deployment string
 	Kind       string
 
-	PublishImage bool
-	ClearCache   bool
+	NoCache    bool
+	PushImage  bool
+	SkipDeploy bool
+	ForceBuild bool
 }

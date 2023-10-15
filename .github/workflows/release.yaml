@@ -23,8 +23,6 @@ jobs:
           cache-dependency-path: go.sum
 
       - name: Build release packages
-        env:
-          VERSION: ${{ github.ref_name }}
         run: make release
 
       - name: Create GitHub release

@@ -5,16 +5,18 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/xigxog/kubefox-cli/internal/config"
 	"github.com/xigxog/kubefox-cli/internal/log"
+	"github.com/xigxog/kubefox/libs/core/kubefox"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 var (
-	flags = config.Flags
-	cfg   *config.Config
+	cfg = &config.Config{}
 )
 
 var rootCmd = &cobra.Command{
@@ -28,9 +30,10 @@ deploy, and release your KubeFox components.
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&flags.RepoPath, "repo", "r", pwd(), "path of git repo")
-	rootCmd.PersistentFlags().StringVarP(&flags.OutFormat, "output", "o", "yaml", `output format. One of: "json", "yaml"`)
-	rootCmd.PersistentFlags().BoolVarP(&flags.Verbose, "verbose", "v", false, "enable verbose output")
+	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.RepoPath, "repo", "r", pwd(), "path of git repo")
+	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.OutFormat, "output", "o", "yaml", `output format. One of: "json", "yaml"`)
+	rootCmd.PersistentFlags().BoolVarP(&cfg.Flags.Info, "info", "i", true, "enable info output")
+	rootCmd.PersistentFlags().BoolVarP(&cfg.Flags.Verbose, "verbose", "v", false, "enable verbose output")
 }
 
 func initViper(cmd *cobra.Command, args []string) {
@@ -49,13 +52,19 @@ func initViper(cmd *cobra.Command, args []string) {
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
-		log.Fatal("Error running command: %v", err)
+		log.Fatal("%v", err)
 	}
 }
 
 func setup(cmd *cobra.Command, args []string) {
-	log.Setup(getOutFormat(), flags.Verbose)
-	cfg = config.Load()
+	log.OutputFormat = getOutFormat()
+	log.EnableInfo = cfg.Flags.Info
+	log.EnableVerbose = cfg.Flags.Verbose
+	ctrl.SetLogger(logr.Logger{})
+
+	cfg.Load()
+
+	log.Verbose("gitCommit: %s, gitRef: %s", kubefox.GitCommit, kubefox.GitRef)
 }
 
 func pwd() string {
@@ -69,14 +78,14 @@ func pwd() string {
 
 func getOutFormat() string {
 	switch {
-	case strings.EqualFold(flags.OutFormat, "yaml") || strings.EqualFold(flags.OutFormat, "yml"):
+	case strings.EqualFold(cfg.Flags.OutFormat, "yaml") || strings.EqualFold(cfg.Flags.OutFormat, "yml"):
 		return "yaml"
-	case strings.EqualFold(flags.OutFormat, "json"):
+	case strings.EqualFold(cfg.Flags.OutFormat, "json"):
 		return "json"
-	case flags.OutFormat == "":
+	case cfg.Flags.OutFormat == "":
 		return "json"
 	default:
-		log.Fatal("Invalid output format '%s', provide one of: 'json', 'yaml'", flags.OutFormat)
+		log.Fatal("Invalid output format '%s', provide one of: 'json', 'yaml'", cfg.Flags.OutFormat)
 		return ""
 	}
 }

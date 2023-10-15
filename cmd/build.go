@@ -21,16 +21,16 @@ Examples:
 }
 
 func init() {
-	buildCmd.Flags().BoolVarP(&flags.PublishImage, "publish", "i", false, "publish image to OCI image registry")
+	buildCmd.Flags().BoolVarP(&cfg.Flags.PushImage, "push", "", false, "publish image to OCI image registry")
 	addCommonBuildFlags(buildCmd)
 
 	rootCmd.AddCommand(buildCmd)
 }
 
 func addCommonBuildFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&flags.Kind, "kind", "k", "", "if provided the built image will be loaded into the Kind cluster")
-	cmd.Flags().StringVarP(&flags.Builder, "builder", "b", "paketobuildpacks/builder:base", "BuildPack builder to use")
-	cmd.Flags().BoolVarP(&flags.ClearCache, "clear-cache", "c", false, `clear BuildPack cache`)
+	cmd.Flags().StringVarP(&cfg.Flags.Kind, "kind", "k", "", "if provided the built image will be loaded into the Kind cluster")
+	cmd.Flags().BoolVarP(&cfg.Flags.NoCache, "no-cache", "", false, "do not use cache when building image")
+	cmd.Flags().BoolVarP(&cfg.Flags.ForceBuild, "force", "", false, "force build even if component image exists")
 }
 
 func build(cmd *cobra.Command, args []string) {

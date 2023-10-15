@@ -22,12 +22,12 @@ func init() {
 }
 
 func addCommonDeployFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&flags.Platform, "platform", "p", "", "Platform to run Components with")
-	cmd.Flags().StringVarP(&flags.Namespace, "namespace", "n", "", "Namespace of Platform")
+	cmd.Flags().StringVarP(&cfg.Flags.Platform, "platform", "p", "", "Platform to run Components with")
+	cmd.Flags().StringVarP(&cfg.Flags.Namespace, "namespace", "n", "", "Namespace of Platform")
 }
 
 func checkCommonDeployFlags(name string) {
-	if flags.Platform != "" && flags.Namespace == "" {
+	if cfg.Flags.Platform != "" && cfg.Flags.Namespace == "" {
 		log.Fatal("'namespace' flag required if 'platform' flag is provided.")
 	}
 	if name != utils.Clean(name) {

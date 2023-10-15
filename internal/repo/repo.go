@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	pack "github.com/buildpacks/pack/pkg/client"
+	docker "github.com/docker/docker/client"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/xigxog/kubefox-cli/internal/config"
@@ -16,6 +16,10 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+const (
+	ComponentsDirName = "components"
+)
+
 type repo struct {
 	cfg  *config.Config
 	app  *App
@@ -23,7 +27,7 @@ type repo struct {
 
 	gitRepo *git.Repository
 	k8s     *kubernetes.Client
-	pack    *pack.Client
+	docker  *docker.Client
 }
 
 type App struct {
@@ -33,8 +37,37 @@ type App struct {
 	ContainerRegistry string `json:"containerRegistry,omitempty"`
 }
 
+func New(cfg *config.Config) *repo {
+	repoPath := cfg.Flags.RepoPath
+
+	app, err := ReadApp(repoPath)
+	if err != nil {
+		log.Fatal("Error reading the Repo's 'app.yaml', try running 'fox init': %v", err)
+	}
+
+	log.Verbose("Opening git repo '%s'", repoPath)
+	gitRepo, err := git.PlainOpen(repoPath)
+	if err != nil {
+		log.Fatal("Error opening git repo '%s': %v", repoPath, err)
+	}
+
+	d, err := docker.NewClientWithOpts(docker.FromEnv, docker.WithAPIVersionNegotiation())
+	if err != nil {
+		log.Fatal("Error creating Docker client: %v", err)
+	}
+
+	return &repo{
+		cfg:     cfg,
+		app:     app,
+		path:    repoPath,
+		gitRepo: gitRepo,
+		k8s:     kubernetes.NewClient(),
+		docker:  d,
+	}
+}
+
 func ReadApp(repoPath string) (*App, error) {
-	log.Verbose("Reading app definition '%s/app.yaml'", repoPath)
+	log.Verbose("Reading app definition '%s'", filepath.Join(repoPath, "app.yaml"))
 	b, err := os.ReadFile(filepath.Join(repoPath, "app.yaml"))
 	if err != nil {
 		return nil, err
@@ -47,35 +80,6 @@ func ReadApp(repoPath string) (*App, error) {
 		return nil, fmt.Errorf("invalid app name")
 	}
 	return app, nil
-}
-
-func New(cfg *config.Config) *repo {
-	path := config.Flags.RepoPath
-
-	app, err := ReadApp(path)
-	if err != nil {
-		log.Fatal("Error reading the Repo's 'app.yaml', try running 'fox init': %v", err)
-	}
-
-	log.Verbose("Opening git repo '%s'", path)
-	gitRepo, err := git.PlainOpen(path)
-	if err != nil {
-		log.Fatal("Error opening git repo '%s': %v", path, err)
-	}
-
-	pack, err := pack.NewClient(pack.WithLogger(log.NewPackLogger()))
-	if err != nil {
-		log.Fatal("Error creating Buildpack client: %v", err)
-	}
-
-	return &repo{
-		cfg:     cfg,
-		app:     app,
-		path:    path,
-		gitRepo: gitRepo,
-		k8s:     kubernetes.NewClient(),
-		pack:    pack,
-	}
 }
 
 func (r *repo) CommitAll(msg string) string {
@@ -95,8 +99,10 @@ func (r *repo) CommitAll(msg string) string {
 	return hash.String()
 }
 
-func (r *repo) GetContainerImage(comp string) string {
-	return fmt.Sprintf("%s/%s/%s:%s", r.cfg.ContainerRegistry.Address, r.app.Name, comp, r.GetCompCommit(comp))
+func (r *repo) GetContainerImage(compDirName string) string {
+	name := utils.Clean(compDirName)
+	commit := r.GetCompCommit(compDirName)
+	return fmt.Sprintf("%s/%s/%s:%s", r.cfg.ContainerRegistry.Address, r.app.Name, name, commit)
 }
 
 func (r *repo) GetRepoURL() string {
@@ -134,8 +140,8 @@ func (r *repo) GetRefName() string {
 	return refName
 }
 
-func (r *repo) GetCompCommit(comp string) string {
-	return r.GetCommit(filepath.Join("components", comp))
+func (r *repo) GetCompCommit(compDirName string) string {
+	return r.GetCommit(filepath.Join(ComponentsDirName, compDirName))
 }
 
 func (r *repo) GetCommit(subPath string) string {

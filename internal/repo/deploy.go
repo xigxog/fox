@@ -2,17 +2,15 @@ package repo
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
 
-	"github.com/xigxog/kubefox-cli/internal/config"
 	"github.com/xigxog/kubefox-cli/internal/log"
 	"github.com/xigxog/kubefox-cli/internal/utils"
-	"github.com/xigxog/kubefox/libs/core/api/kubernetes/v1alpha1"
+	"github.com/xigxog/kubefox/libs/api/kubernetes/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,8 +49,8 @@ func (r *repo) applyIPS(ctx context.Context, p *v1alpha1.Platform, spec *v1alpha
 	if r.cfg.ContainerRegistry.Token != "" {
 		cr := r.cfg.ContainerRegistry
 		name := fmt.Sprintf("%s-image-pull-secret", spec.App.Name)
-		auth := base64.StdEncoding.EncodeToString([]byte(cr.Token))
-		dockerCfg := fmt.Sprintf(`{ "auths": { "%s": { "auth": "%s" } } }`, cr.Address, auth)
+		dockerCfg := fmt.Sprintf(`{"auths":{"%s":{"username":"kubefox","password":"%s"}}}`, cr.Address, cr.Token)
+
 		s := &corev1.Secret{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: corev1.SchemeGroupVersion.Identifier(),
@@ -63,6 +61,7 @@ func (r *repo) applyIPS(ctx context.Context, p *v1alpha1.Platform, spec *v1alpha
 				Name:      name,
 			},
 			Type: "kubernetes.io/dockerconfigjson",
+
 			StringData: map[string]string{
 				".dockerconfigjson": dockerCfg,
 			},
@@ -77,8 +76,8 @@ func (r *repo) applyIPS(ctx context.Context, p *v1alpha1.Platform, spec *v1alpha
 
 func (r *repo) buildDepSpec() (*v1alpha1.Platform, *v1alpha1.DeploymentSpec) {
 	nn := types.NamespacedName{
-		Namespace: config.Flags.Namespace,
-		Name:      config.Flags.Platform,
+		Namespace: r.cfg.Flags.Namespace,
+		Name:      r.cfg.Flags.Platform,
 	}
 	if nn.Name == "" {
 		nn.Namespace = r.cfg.KubeFox.Namespace
@@ -107,7 +106,7 @@ func (r *repo) buildDepSpec() (*v1alpha1.Platform, *v1alpha1.DeploymentSpec) {
 }
 
 func (r *repo) getDepSpec() *v1alpha1.DeploymentSpec {
-	compsDirPath := filepath.Join(config.Flags.RepoPath, "components")
+	compsDirPath := filepath.Join(r.cfg.Flags.RepoPath, ComponentsDirName)
 	compsDir, err := os.ReadDir(compsDirPath)
 	if err != nil {
 		log.Fatal("Error listing components dir '%s': %v", compsDirPath, err)
@@ -133,9 +132,9 @@ func (r *repo) getDepSpec() *v1alpha1.DeploymentSpec {
 		}
 
 		compName := utils.Clean(compDir.Name())
-		c := &v1alpha1.Component{}
-		c.Commit = r.GetCompCommit(compName)
-		depSpec.Components[compName] = c
+		depSpec.Components[compName] = &v1alpha1.Component{
+			Commit: r.GetCompCommit(compDir.Name()),
+		}
 	}
 
 	return depSpec

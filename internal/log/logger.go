@@ -6,21 +6,15 @@ import (
 	"os"
 
 	"github.com/xigxog/kubefox/libs/core/logkf"
-	"go.uber.org/zap/zapcore"
 	"sigs.k8s.io/yaml"
 )
 
 var (
-	log    *logkf.Logger = logkf.BuildLoggerOrDie("cli", "debug")
-	outFmt string        = "json"
+	log           *logkf.Logger = logkf.BuildLoggerOrDie("cli", "debug")
+	OutputFormat  string        = "json"
+	EnableInfo    bool
+	EnableVerbose bool
 )
-
-func Setup(fmt string, verbose bool) {
-	if !verbose {
-		log = log.IncreaseLevel(zapcore.InfoLevel)
-	}
-	outFmt = fmt
-}
 
 func Logger() *logkf.Logger {
 	return log
@@ -34,15 +28,24 @@ func Marshal(o any) {
 	fmt.Print(marshal(o))
 }
 
-func Newline() {
+func InfoNewline() {
+	if !EnableInfo {
+		return
+	}
 	fmt.Fprintln(os.Stderr)
 }
 
 func Info(format string, v ...any) {
+	if !EnableInfo {
+		return
+	}
 	log.Infof(format, v...)
 }
 
 func InfoMarshal(o any, format string, v ...any) {
+	if !EnableInfo {
+		return
+	}
 	format = format + "\n%s"
 	out, _ := yaml.Marshal(o)
 	v = append(v, out)
@@ -50,10 +53,16 @@ func InfoMarshal(o any, format string, v ...any) {
 }
 
 func Verbose(format string, v ...any) {
+	if !EnableVerbose {
+		return
+	}
 	log.Debugf(format, v...)
 }
 
 func VerboseMarshal(o any, format string, v ...any) {
+	if !EnableVerbose {
+		return
+	}
 	format = format + "\n%s"
 	out, _ := yaml.Marshal(o)
 	v = append(v, out)
@@ -73,7 +82,7 @@ func Fatal(format string, v ...any) {
 func marshal(o any) string {
 	var output []byte
 	var err error
-	if outFmt == "yaml" {
+	if OutputFormat == "yaml" {
 		output, err = yaml.Marshal(o)
 	} else {
 		output, err = json.MarshalIndent(o, "", "  ")
