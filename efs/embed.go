@@ -6,7 +6,6 @@ import (
 
 const (
 	HelloWorldPath = "hello-world"
-	ComponentPath  = "component"
 )
 
 // Go will not embed directories containing a go.mod file. To resolve this the

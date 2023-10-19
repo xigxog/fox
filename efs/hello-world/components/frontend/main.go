@@ -14,24 +14,24 @@ func main() {
 }
 
 func sayHello(k kit.Kontext) error {
-	r, err := k.Component("world").Send()
+	r, err := k.Component("backend").Send()
 	if err != nil {
 		return err
 	}
 
-	msg := fmt.Sprintf("👋 Hello %s!", r.String())
+	msg := fmt.Sprintf("👋 Hello %s!", r.Str())
 	k.Log().Info(msg)
 
-	accVal := strings.ToLower(k.Header("accept"))
+	a := strings.ToLower(k.Header("accept"))
 	switch {
-	case strings.Contains(accVal, "application/json"):
+	case strings.Contains(a, "application/json"):
 		return k.Resp().SendJSON(map[string]any{"msg": msg})
 
-	case strings.Contains(accVal, "text/html"):
+	case strings.Contains(a, "text/html"):
 		return k.Resp().SendHTML(fmt.Sprintf(html, msg))
 
 	default:
-		return k.Resp().SendString(msg)
+		return k.Resp().SendStr(msg)
 	}
 }
 

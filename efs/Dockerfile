@@ -10,7 +10,6 @@ WORKDIR /app
 
 # Cache dependencies.
 COPY $COMPONENT_DIR/go.mod $COMPONENT_DIR/go.sum $COMPONENT_DIR/
-COPY libs/ libs/
 RUN cd "$COMPONENT_DIR/" && go mod download
 
 COPY ./ ./

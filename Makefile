@@ -18,9 +18,9 @@ docs:
 
 .PHONY: release
 release: clean
-	# GIT_COMMIT=$(GIT_COMMIT) GIT_REF=$(GIT_REF) ./build.sh darwin $(BUILD_DIR) $(REL_DIR)
+	GIT_COMMIT=$(GIT_COMMIT) GIT_REF=$(GIT_REF) ./build.sh darwin $(BUILD_DIR) $(REL_DIR)
 	GIT_COMMIT=$(GIT_COMMIT) GIT_REF=$(GIT_REF) ./build.sh linux $(BUILD_DIR) $(REL_DIR)
-	# GIT_COMMIT=$(GIT_COMMIT) GIT_REF=$(GIT_REF) ./build.sh windows $(BUILD_DIR) $(REL_DIR)
+	GIT_COMMIT=$(GIT_COMMIT) GIT_REF=$(GIT_REF) ./build.sh windows $(BUILD_DIR) $(REL_DIR)
 
 .PHONY: clean
 clean:
