@@ -50,6 +50,7 @@ func runPublish(cmd *cobra.Command, args []string) error {
 		d := r.Deploy(args[0])
 		// Makes output less cluttered.
 		d.ManagedFields = nil
+		log.InfoNewline()
 		log.Marshal(d)
 	}
 

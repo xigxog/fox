@@ -43,5 +43,6 @@ func runDeploy(cmd *cobra.Command, args []string) {
 	d := r.Deploy(name)
 	// Makes output less cluttered.
 	d.ManagedFields = nil
+	log.InfoNewline()
 	log.Marshal(d)
 }

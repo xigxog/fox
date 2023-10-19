@@ -133,7 +133,7 @@ func (r *repo) GetRefName() string {
 	}
 
 	if gitRef.Name().IsBranch() {
-		return "branch/" + gitRef.Name().Short()
+		return gitRef.Name().String()
 	}
 
 	// find tag
@@ -144,7 +144,7 @@ func (r *repo) GetRefName() string {
 	}
 	tags.ForEach(func(tag *plumbing.Reference) error {
 		if gitRef.Hash() == tag.Hash() {
-			refName = "tag/" + tag.Name().Short()
+			refName = tag.Name().String()
 		}
 		return nil
 	})

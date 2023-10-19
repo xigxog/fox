@@ -32,7 +32,7 @@ deploy, and release your KubeFox components.
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.RepoPath, "repo", "r", pwd(), "path of git repo")
 	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.OutFormat, "output", "o", "yaml", `output format. One of: "json", "yaml"`)
-	rootCmd.PersistentFlags().BoolVarP(&cfg.Flags.Info, "info", "i", true, "enable info output")
+	rootCmd.PersistentFlags().BoolVarP(&cfg.Flags.Info, "info", "i", false, "enable info output")
 	rootCmd.PersistentFlags().BoolVarP(&cfg.Flags.Verbose, "verbose", "v", false, "enable verbose output")
 }
 

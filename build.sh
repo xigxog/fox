@@ -2,14 +2,23 @@
 
 set -e
 
-export CGO_ENABLED=0
-export GOARCH=amd64
+git_commit=$(git log -n 1 --format="%h" -- ./)
+git_ref=$(git symbolic-ref -q --short HEAD || git describe --tags --exact-match)
 
 export GOOS=${1:-"linux"}
 build_dir=${2:-"bin"}
 rel_dir=${3:-"release"}
-GIT_REF=${4:-"$GIT_REF"}
 
+GIT_COMMIT=${GIT_COMMIT:-"$git_commit"}
+GIT_REF=${GIT_REF:-"$git_ref"}
+
+export CGO_ENABLED=0
+export GOARCH=amd64
+
+if [ -z "${GIT_COMMIT}" ]; then
+    echo "Environment variable GIT_COMMIT must be set for release target"
+    exit 1
+fi
 if [ -z "${GIT_REF}" ]; then
     echo "Environment variable GIT_REF must be set for release target"
     exit 1
@@ -21,6 +30,9 @@ tar="${bin}-$(basename ${GIT_REF})-${GOOS}-${GOARCH}.tar.gz"
 if [ "$GOOS" == "windows" ]; then
     bin="fox.exe"
 fi
+
+echo "Creating Fox release package..."
+echo "Git Commit: $GIT_COMMIT, Git Ref: $GIT_REF, Package: ${rel_dir}/${tar}"
 
 go build \
     -o "${build_dir}/${bin}" \
@@ -35,3 +47,5 @@ tar -czvf "${rel_dir}/${tar}" --transform='s,.*/,,' "${build_dir}/${bin}" LICENS
     cd "${rel_dir}"
     sha256sum "${tar}" >"${tar}.sha256sum"
 )
+
+echo "Fin."

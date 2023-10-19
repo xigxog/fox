@@ -117,7 +117,7 @@ func (cfg *Config) Setup() {
 	if kindOnly {
 		cfg.ContainerRegistry.Address = LocalRegistry
 		cfg.ContainerRegistry.Token = ""
-		cfg.Kind.ClusterName = utils.NamePrompt("Kind cluster", "kubefox", true)
+		cfg.Kind.ClusterName = utils.NamePrompt("Kind cluster", "kind", true)
 		cfg.Kind.AlwaysLoad = true
 		cfg.done()
 		return

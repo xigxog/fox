@@ -17,6 +17,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/moby/patternmatcher/ignorefile"
 	"github.com/xigxog/kubefox-cli/efs"
@@ -142,8 +143,12 @@ func (r *repo) KindLoad(img string) {
 	}
 
 	cmd := exec.Command("kind", "load", "docker-image", "--name="+kind, img)
-	if err := cmd.Run(); err != nil {
+
+	if out, err := cmd.CombinedOutput(); err != nil {
+		log.Error("%s", strings.TrimSpace(string(out)))
 		log.Error("Error loading component image into Kind: %v", err)
+	} else {
+		log.Verbose("%s", strings.TrimSpace(string(out)))
 	}
 }
 
@@ -152,7 +157,7 @@ func (r *repo) GetRegAuth() string {
 	if r.cfg.GitHub.Token != "" {
 		token = r.cfg.GitHub.Token
 	}
-	authCfg, _ := json.Marshal(types.AuthConfig{
+	authCfg, _ := json.Marshal(registry.AuthConfig{
 		Username: "kubefox",
 		Password: token,
 	})
