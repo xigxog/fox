@@ -4,19 +4,22 @@ set -e
 
 export CGO_ENABLED=0
 export GOARCH=amd64
+
 export GOOS=${1:-"linux"}
 build_dir=${2:-"bin"}
 rel_dir=${3:-"release"}
-bin="fox"
-tar="${bin}-${GIT_REF}-${GOOS}-${GOARCH}.tar.gz"
-
-if [ "$GOOS" == "windows" ]; then
-    bin="fox.exe"
-fi
+GIT_REF=${4:-"$GIT_REF"}
 
 if [ -z "${GIT_REF}" ]; then
     echo "Environment variable GIT_REF must be set for release target"
     exit 1
+fi
+
+bin="fox"
+tar="${bin}-$(basename ${GIT_REF})-${GOOS}-${GOARCH}.tar.gz"
+
+if [ "$GOOS" == "windows" ]; then
+    bin="fox.exe"
 fi
 
 go build \

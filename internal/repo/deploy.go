@@ -192,7 +192,8 @@ func (r *repo) pickPlatform() *v1alpha1.Platform {
 
 func (r *repo) createPlatform() *v1alpha1.Platform {
 	name := utils.NamePrompt("Platform", "", true)
-	namespace := utils.InputPrompt("Enter the Kubernetes namespace of the Platform", "", true)
+	namespace := utils.InputPrompt("Enter the Kubernetes namespace of the Platform",
+		fmt.Sprintf("kubefox-%s", name), true)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
