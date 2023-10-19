@@ -113,11 +113,11 @@ func (cfg *Config) Setup() {
 	log.Info("Fox needs a place to store the KubeFox Component images it will build, normally")
 	log.Info("this is a remote container registry. However, if you only want to use KubeFox")
 	log.Info("locally with Kind you can skip this step.")
-	kindOnly := utils.YesNoPrompt("Are you only using KubeFox locally?", false)
+	kindOnly := utils.YesNoPrompt("Are you only using KubeFox with local Kind cluster?", false)
 	if kindOnly {
 		cfg.ContainerRegistry.Address = LocalRegistry
 		cfg.ContainerRegistry.Token = ""
-		cfg.Kind.ClusterName = utils.NamePrompt("Kind cluster", "kind", true)
+		cfg.Kind.ClusterName = utils.NamePrompt("Kind cluster name", "kind", true)
 		cfg.Kind.AlwaysLoad = true
 		cfg.done()
 		return

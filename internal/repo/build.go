@@ -44,8 +44,9 @@ func (r *repo) BuildComp(compDirName string) string {
 	gitCommit := r.GetCompCommit(compDirName)
 	gitRef := r.GetRefName()
 	regAuth := r.GetRegAuth()
+	localReg := strings.HasPrefix(r.cfg.ContainerRegistry.Address, config.LocalRegistry)
 
-	if !(r.cfg.Flags.ForceBuild || r.cfg.Flags.NoCache) {
+	if !(r.cfg.Flags.ForceBuild || r.cfg.Flags.NoCache || localReg) {
 		if di, err := r.docker.DistributionInspect(context.Background(), img, regAuth); err != nil {
 			log.Verbose("%s", err)
 		} else {
@@ -81,6 +82,7 @@ func (r *repo) BuildComp(compDirName string) string {
 	buildResp, err := r.docker.ImageBuild(context.Background(), dfi, types.ImageBuildOptions{
 		Dockerfile: injectedDockerfile,
 		NoCache:    r.cfg.Flags.NoCache,
+		Remove:     true,
 		Tags:       []string{img},
 		Labels:     labels,
 		BuildArgs: map[string]*string{
@@ -95,7 +97,6 @@ func (r *repo) BuildComp(compDirName string) string {
 	}
 	logResp(buildResp.Body)
 
-	localReg := strings.HasPrefix(r.cfg.ContainerRegistry.Address, config.LocalRegistry)
 	if localReg {
 		log.Verbose("Local registry is set, container image push will be skipped.")
 	}
@@ -146,7 +147,7 @@ func (r *repo) KindLoad(img string) {
 
 	if out, err := cmd.CombinedOutput(); err != nil {
 		log.Error("%s", strings.TrimSpace(string(out)))
-		log.Error("Error loading component image into Kind: %v", err)
+		log.Fatal("Error loading component image into Kind: %v", err)
 	} else {
 		log.Verbose("%s", strings.TrimSpace(string(out)))
 	}
