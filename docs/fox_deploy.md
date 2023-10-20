@@ -1,6 +1,6 @@
 ## fox deploy
 
-Deploy app using the version of the currently checked out Git commit
+Deploy KubeFox app using the version from the currently checked out Git commit
 
 ```
 fox deploy [deployment name] [flags]
@@ -20,7 +20,7 @@ fox deploy [deployment name] [flags]
 ```
   -i, --info            enable info output
   -o, --output string   output format, one of ["json", "yaml"] (default "yaml")
-  -r, --repo string     path of Git repository to operate against (default "/home/xadhatter/Workspace/src/github.com/xigxog/kubefox-cli")
+  -r, --repo string     path of Git repository to operate against (default "/home/xadhatter/Workspace/src/github.com/xigxog/fox")
   -v, --verbose         enable verbose output
 ```
 

@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/xigxog/kubefox-cli/internal/log"
+	"github.com/xigxog/fox/internal/log"
 )
 
 var cfgCmd = &cobra.Command{

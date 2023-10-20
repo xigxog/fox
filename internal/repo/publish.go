@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/xigxog/kubefox-cli/internal/log"
+	"github.com/xigxog/fox/internal/log"
 	"github.com/xigxog/kubefox/libs/api/kubernetes/v1alpha1"
 )
 

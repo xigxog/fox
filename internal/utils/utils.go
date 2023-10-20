@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/xigxog/kubefox-cli/internal/log"
+	"github.com/xigxog/fox/internal/log"
 )
 
 var specChars = regexp.MustCompile(`[^a-z0-9]`)

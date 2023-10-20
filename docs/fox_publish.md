@@ -1,6 +1,6 @@
 ## fox publish
 
-Builds, pushes, and deploys app using the version of the currently checked out Git commit
+Builds, pushes, and deploys KubeFox apps using the version of the currently checked out Git commit
 
 ```
 fox publish [deploy-name] [flags]
@@ -25,7 +25,7 @@ fox publish [deploy-name] [flags]
 ```
   -i, --info            enable info output
   -o, --output string   output format, one of ["json", "yaml"] (default "yaml")
-  -r, --repo string     path of Git repository to operate against (default "/home/xadhatter/Workspace/src/github.com/xigxog/kubefox-cli")
+  -r, --repo string     path of Git repository to operate against (default "/home/xadhatter/Workspace/src/github.com/xigxog/fox")
   -v, --verbose         enable verbose output
 ```
 

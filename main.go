@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/xigxog/kubefox-cli/cmd"
+	"github.com/xigxog/fox/cmd"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-module github.com/xigxog/kubefox-cli
+module github.com/xigxog/fox
 
 go 1.21
 

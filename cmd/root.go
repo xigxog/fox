@@ -9,8 +9,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"github.com/xigxog/kubefox-cli/internal/config"
-	"github.com/xigxog/kubefox-cli/internal/log"
+	"github.com/xigxog/fox/internal/config"
+	"github.com/xigxog/fox/internal/log"
 	"github.com/xigxog/kubefox/libs/core/kubefox"
 	ctrl "sigs.k8s.io/controller-runtime"
 )

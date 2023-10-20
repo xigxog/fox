@@ -1,6 +1,6 @@
 ## fox release
 
-Release app using the version of the currently checked out Git commit
+Release app using the version from the currently checked out Git commit
 
 ### Synopsis
 
@@ -39,7 +39,7 @@ fox release [release name] [flags]
 ```
   -i, --info            enable info output
   -o, --output string   output format, one of ["json", "yaml"] (default "yaml")
-  -r, --repo string     path of Git repository to operate against (default "/home/xadhatter/Workspace/src/github.com/xigxog/kubefox-cli")
+  -r, --repo string     path of Git repository to operate against (default "/home/xadhatter/Workspace/src/github.com/xigxog/fox")
   -v, --verbose         enable verbose output
 ```
 

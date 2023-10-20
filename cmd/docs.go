@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
-	"github.com/xigxog/kubefox-cli/internal/log"
+	"github.com/xigxog/fox/internal/log"
 )
 
 var docsCmd = &cobra.Command{

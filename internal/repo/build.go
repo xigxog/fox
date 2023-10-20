@@ -20,9 +20,9 @@ import (
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/moby/patternmatcher/ignorefile"
-	"github.com/xigxog/kubefox-cli/efs"
-	"github.com/xigxog/kubefox-cli/internal/log"
-	"github.com/xigxog/kubefox-cli/internal/utils"
+	"github.com/xigxog/fox/efs"
+	"github.com/xigxog/fox/internal/log"
+	"github.com/xigxog/fox/internal/utils"
 	"github.com/xigxog/kubefox/libs/core/kubefox"
 )
 

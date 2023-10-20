@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/xigxog/kubefox-cli/internal/log"
-	"github.com/xigxog/kubefox-cli/internal/repo"
-	"github.com/xigxog/kubefox-cli/internal/utils"
+	"github.com/xigxog/fox/internal/log"
+	"github.com/xigxog/fox/internal/repo"
+	"github.com/xigxog/fox/internal/utils"
 )
 
 var deployCmd = &cobra.Command{

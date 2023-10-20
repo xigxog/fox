@@ -13,8 +13,8 @@ import (
 	"strings"
 
 	"github.com/cli/oauth/device"
-	"github.com/xigxog/kubefox-cli/internal/log"
-	"github.com/xigxog/kubefox-cli/internal/utils"
+	"github.com/xigxog/fox/internal/log"
+	"github.com/xigxog/fox/internal/utils"
 	"sigs.k8s.io/yaml"
 )
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/xigxog/kubefox-cli/internal/log"
+	"github.com/xigxog/fox/internal/log"
 	"github.com/xigxog/kubefox/libs/api/kubernetes/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"

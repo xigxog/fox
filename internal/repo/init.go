@@ -15,10 +15,10 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/storage/filesystem"
-	"github.com/xigxog/kubefox-cli/efs"
-	"github.com/xigxog/kubefox-cli/internal/config"
-	"github.com/xigxog/kubefox-cli/internal/log"
-	"github.com/xigxog/kubefox-cli/internal/utils"
+	"github.com/xigxog/fox/efs"
+	"github.com/xigxog/fox/internal/config"
+	"github.com/xigxog/fox/internal/log"
+	"github.com/xigxog/fox/internal/utils"
 )
 
 func Init(cfg *config.Config) {

@@ -17,7 +17,7 @@ fox config show [flags]
 ```
   -i, --info            enable info output
   -o, --output string   output format, one of ["json", "yaml"] (default "yaml")
-  -r, --repo string     path of Git repository to operate against (default "/home/xadhatter/Workspace/src/github.com/xigxog/kubefox-cli")
+  -r, --repo string     path of Git repository to operate against (default "/home/xadhatter/Workspace/src/github.com/xigxog/fox")
   -v, --verbose         enable verbose output
 ```
 

@@ -9,10 +9,10 @@ import (
 	docker "github.com/docker/docker/client"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/xigxog/kubefox-cli/internal/config"
-	"github.com/xigxog/kubefox-cli/internal/kubernetes"
-	"github.com/xigxog/kubefox-cli/internal/log"
-	"github.com/xigxog/kubefox-cli/internal/utils"
+	"github.com/xigxog/fox/internal/config"
+	"github.com/xigxog/fox/internal/kubernetes"
+	"github.com/xigxog/fox/internal/log"
+	"github.com/xigxog/fox/internal/utils"
 	"gopkg.in/yaml.v2"
 )
 

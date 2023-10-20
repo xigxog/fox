@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/xigxog/kubefox-cli/internal/log"
-	"github.com/xigxog/kubefox-cli/internal/utils"
+	"github.com/xigxog/fox/internal/log"
+	"github.com/xigxog/fox/internal/utils"
 	"github.com/xigxog/kubefox/libs/api/kubernetes/v1alpha1"
 	"github.com/xigxog/kubefox/libs/core/kubefox"
 	corev1 "k8s.io/api/core/v1"
