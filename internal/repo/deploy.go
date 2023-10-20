@@ -102,7 +102,7 @@ func (r *repo) prepareDeployment() (*v1alpha1.Platform, *v1alpha1.DeploymentSpec
 			if apierrors.IsNotFound(err) {
 				platform = r.pickPlatform()
 			} else {
-				log.Fatal("Unable to get Platform: %v", err)
+				log.Fatal("Unable to get KubeFox platform: %v", err)
 			}
 		}
 	}
@@ -111,19 +111,22 @@ func (r *repo) prepareDeployment() (*v1alpha1.Platform, *v1alpha1.DeploymentSpec
 
 	allFound := true
 	for n, c := range spec.Components {
-		img := fmt.Sprintf("%s/%s:%s", spec.App.ContainerRegistry, n, c.Commit)
-		found, _ := r.ensureImageExists(img, false)
-		if !found {
+		img := r.GetCompImage(n, c.Commit)
+		if found, _ := r.ensureImageExists(img, false); found {
+			log.Info("Component image '%s' exists.", img)
+		} else {
+			log.Warn("Component image '%s' does not exist.", img)
 			allFound = false
-			break
 		}
 	}
+	log.InfoNewline()
 
 	if !allFound {
 		log.Info("There are one or more missing component images. 🦊 Fox will need to build and")
 		log.Info("push them to the container registry before continuing with the operation.")
 		if utils.YesNoPrompt("Missing component images, would you like to publish them?", true) {
-			r.Publish()
+			log.InfoNewline()
+			r.Publish("")
 		} else {
 			log.Fatal("There are one or more missing component images.")
 		}
@@ -181,14 +184,14 @@ func (r *repo) pickPlatform() *v1alpha1.Platform {
 		if !r.cfg.Flags.Info {
 			context := r.k8s.KubeConfig.CurrentContext
 			cluster := r.k8s.KubeConfig.Contexts[context].Cluster
-			log.Warn("No Platforms found on the current cluster '%s'.", cluster)
+			log.Warn("No KubeFox platforms found on the current cluster '%s'.", cluster)
 		}
-		log.Info("You need to have a KubeFox Platform instance running to deploy your components.")
+		log.Info("You need to have a KubeFox platform instance running to deploy your components.")
 		log.Info("Don't worry, 🦊 Fox can create one for you.")
-		if utils.YesNoPrompt("Would you like to create a Platform?", true) {
+		if utils.YesNoPrompt("Would you like to create a KubeFox platform?", true) {
 			return r.createPlatform()
 		} else {
-			log.Fatal("Error you must create a Platform before deploying Components.")
+			log.Fatal("Error you must create a KubeFox platform before deploying components.")
 		}
 	case 1:
 		return &pList[0]
@@ -199,7 +202,7 @@ func (r *repo) pickPlatform() *v1alpha1.Platform {
 	}
 
 	var input string
-	log.Printf("Select the KubeFox Platform to use: ")
+	log.Printf("Select the KubeFox platform to use: ")
 	fmt.Scanln(&input)
 	i, err := strconv.Atoi(input)
 	if err != nil {
@@ -212,20 +215,22 @@ func (r *repo) pickPlatform() *v1alpha1.Platform {
 
 	p := &pList[i]
 	if len(pList) > 1 {
-		if utils.YesNoPrompt("Remember selected Platform?", true) {
+		if utils.YesNoPrompt("Remember selected KubeFox platform?", true) {
 			r.cfg.KubeFox.Namespace = p.Namespace
 			r.cfg.KubeFox.Platform = p.Name
 			r.cfg.Write()
 		}
 	}
+	log.InfoNewline()
 
 	return p
 }
 
 func (r *repo) createPlatform() *v1alpha1.Platform {
-	name := utils.NamePrompt("Platform", "", true)
-	namespace := utils.InputPrompt("Enter the Kubernetes namespace of the Platform",
+	name := utils.NamePrompt("KubeFox platform", "", true)
+	namespace := utils.InputPrompt("Enter the Kubernetes namespace of the KubeFox platform",
 		fmt.Sprintf("kubefox-%s", name), true)
+	log.InfoNewline()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -268,7 +273,7 @@ func (r *repo) waitForReady(p *v1alpha1.Platform, spec *v1alpha1.DeploymentSpec)
 	ctx, cancel := context.WithTimeout(context.Background(), r.cfg.Flags.WaitTime)
 	defer cancel()
 
-	log.Info("Waiting for Platform '%s' to be ready.", p.Name)
+	log.Info("Waiting for KubeFox platform '%s' to be ready.", p.Name)
 	if err := r.checkAllPodsRdy(ctx, p, "nats", ""); err != nil {
 		log.Fatal("Error while waiting: %v", err)
 	}
@@ -277,15 +282,17 @@ func (r *repo) waitForReady(p *v1alpha1.Platform, spec *v1alpha1.DeploymentSpec)
 	}
 
 	for n, c := range spec.Components {
-		log.Info("Waiting for Component '%s' to be ready.", n)
+		log.Info("Waiting for component '%s' to be ready.", n)
 		if err := r.checkAllPodsRdy(ctx, p, n, c.Commit); err != nil {
 			log.Fatal("Error while waiting: %v", err)
 		}
 	}
+	log.InfoNewline()
 }
 
 func (r *repo) checkAllPodsRdy(ctx context.Context, p *v1alpha1.Platform, comp, commit string) error {
-	log.Verbose("Waiting for Component '%s' with commit '%s' to be ready.", comp, commit)
+	log.Verbose("Waiting for component '%s' with commit '%s' to be ready.", comp, commit)
+
 	hasLabels := client.MatchingLabels{
 		kubefox.LabelK8sComponent: comp,
 		kubefox.LabelK8sPlatform:  p.Name,
@@ -299,7 +306,7 @@ func (r *repo) checkAllPodsRdy(ctx context.Context, p *v1alpha1.Platform, comp, 
 		return fmt.Errorf("unable to list pods: %w", err)
 	}
 
-	ready := true
+	ready := len(l.Items) > 0
 	for _, p := range l.Items {
 		for _, c := range p.Status.ContainerStatuses {
 			if !c.Ready {

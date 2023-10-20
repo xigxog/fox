@@ -91,7 +91,7 @@ func (cfg *Config) Load() {
 	if errors.Is(err, fs.ErrNotExist) {
 		log.Info("It looks like this is the first time you are using 🦊 Fox. Welcome!")
 		log.InfoNewline()
-		log.Info("Fox needs some information from you to configure itself. The setup process only")
+		log.Info("🦊 Fox needs some information from you to configure itself. The setup process only")
 		log.Info("needs to be run once, but if you ever want change things you can use the")
 		log.Info("command 'fox config setup'.")
 		log.InfoNewline()
@@ -119,41 +119,40 @@ func (cfg *Config) Setup() {
 	log.Info("If you don't have a Kubernetes cluster you can run one locally with Kind (https://kind.sigs.k8s.io)")
 	log.Info("to experiment with KubeFox.")
 	log.InfoNewline()
-	log.Info("Fox needs a place to store the KubeFox Component images it will build, normally")
-	log.Info("this is a remote container registry. However, if you only want to use KubeFox")
-	log.Info("locally with Kind you can skip this step.")
+	log.Info("🦊 Fox needs a place to store the component images it will build, normally this is")
+	log.Info("a remote container registry. However, if you only want to use KubeFox locally")
+	log.Info("with Kind you can skip this step.")
 	kindOnly := utils.YesNoPrompt("Are you only using KubeFox with local Kind cluster?", false)
 	if kindOnly {
 		cfg.ContainerRegistry.Address = LocalRegistry
 		cfg.ContainerRegistry.Token = ""
-		cfg.Kind.ClusterName = utils.NamePrompt("Kind cluster name", "kind", true)
+		cfg.Kind.ClusterName = utils.NamePrompt("Kind cluster", "kind", true)
 		cfg.Kind.AlwaysLoad = true
+		log.InfoNewline()
 		cfg.done()
 		return
 	}
-
 	log.InfoNewline()
 	log.Info("Great! If you don't already have a container registry 🦊 Fox can help setup the")
 	log.Info("GitHub container registry (ghcr.io).")
 	useGH := utils.YesNoPrompt("Would you like to use ghcr.io?", true)
+	log.InfoNewline()
 	if useGH {
 		cfg.setupGitHub()
-
 	} else {
-		log.InfoNewline()
 		log.Info("No problem. 🦊 Fox just needs to know which container registry to use. Please be")
 		log.Info("sure you have permissions to pull and push images to the registry.")
 		cfg.ContainerRegistry.Address = utils.InputPrompt("Enter the container registry you'd like to use", "", true)
 		cfg.ContainerRegistry.Token = utils.InputPrompt("Enter the container registry access token", "", false)
 	}
 
+	log.InfoNewline()
 	cfg.done()
 }
 
 func (cfg *Config) done() {
 	cfg.Fresh = true
 	cfg.Write()
-
 	log.InfoNewline()
 	log.Info("Congrats, you are ready to use KubeFox!")
 	log.Info("Check out the quickstart for next steps (https://docs.kubefox.io/quickstart/).")
@@ -162,8 +161,7 @@ func (cfg *Config) done() {
 }
 
 func (cfg *Config) setupGitHub() {
-	log.InfoNewline()
-	log.Info("Fox needs to create two access tokens. The first is used by 🦊 Fox and is only")
+	log.Info("🦊 Fox needs to create two access tokens. The first is used by 🦊 Fox and is only")
 	log.Info("stored locally. It allows 🦊 Fox to read your GitHub user and organizations and to")
 	log.Info("push and pull container images to ghcr.io. This information never leaves your")
 	log.Info("workstation.")
@@ -193,6 +191,7 @@ func (cfg *Config) setupGitHub() {
 		cfg.GitHub.Org = *pickOrg(orgs)
 	}
 	cfg.ContainerRegistry.Address = fmt.Sprintf("ghcr.io/%s", cfg.GitHub.Org.Name)
+	log.InfoNewline()
 }
 
 func getToken(scopes []string) string {

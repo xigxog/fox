@@ -36,8 +36,8 @@ type DockerfileTar struct {
 	read       int
 }
 
-func (r *repo) BuildComp(compDirName string) string {
-	img := r.GetContainerImage(compDirName)
+func (r *repo) Build(compDirName string) string {
+	img := r.GetCompImageFromDir(compDirName)
 	compDir := filepath.Join(ComponentsDirName, compDirName)
 	compName := utils.Clean(compDirName)
 	gitCommit := r.GetCompCommit(compDirName)
@@ -48,12 +48,12 @@ func (r *repo) BuildComp(compDirName string) string {
 		if found, _ := r.ensureImageExists(img, false); found {
 			log.Info("Component image '%s' exists, skipping build.", img)
 			r.KindLoad(img)
+			log.InfoNewline()
 			return img
 		}
 	}
 
 	log.Info("Building component image '%s'.", img)
-
 	dfPath := filepath.Join(r.cfg.Flags.RepoPath, ComponentsDirName, compDirName, "Dockerfile")
 	df, err := os.ReadFile(dfPath)
 	if err != nil {
@@ -106,8 +106,9 @@ func (r *repo) BuildComp(compDirName string) string {
 		}
 		logResp(pushResp, true)
 	}
-	r.KindLoad(img)
 
+	r.KindLoad(img)
+	log.InfoNewline()
 	return img
 }
 

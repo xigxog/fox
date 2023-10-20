@@ -5,9 +5,10 @@ import (
 	"path/filepath"
 
 	"github.com/xigxog/kubefox-cli/internal/log"
+	"github.com/xigxog/kubefox/libs/api/kubernetes/v1alpha1"
 )
 
-func (r *repo) Publish() {
+func (r *repo) Publish(deployName string) *v1alpha1.Deployment {
 	compsDirPath := filepath.Join(r.cfg.Flags.RepoPath, ComponentsDirName)
 	compsDir, err := os.ReadDir(compsDirPath)
 	if err != nil {
@@ -18,7 +19,11 @@ func (r *repo) Publish() {
 		if !compDir.IsDir() {
 			continue
 		}
-
-		r.BuildComp(compDir.Name())
+		r.Build(compDir.Name())
 	}
+
+	if !r.cfg.Flags.SkipDeploy && deployName != "" {
+		return r.Deploy(deployName)
+	}
+	return nil
 }

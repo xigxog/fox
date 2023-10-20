@@ -13,7 +13,7 @@ var publishCmd = &cobra.Command{
 	Args:   cobra.MaximumNArgs(1),
 	PreRun: setup,
 	RunE:   runPublish,
-	Short:  "Builds, pushes, and deploys app using the version of the currently checked out Git commit",
+	Short:  "Builds, pushes, and deploys KubeFox apps using the version of the currently checked out Git commit",
 }
 
 var (
@@ -39,20 +39,18 @@ func runPublish(cmd *cobra.Command, args []string) error {
 	if !cfg.Flags.SkipDeploy && len(args) == 0 {
 		return fmt.Errorf("accepts 1 arg(s), received 0")
 	}
+
+	var name string
 	if !cfg.Flags.SkipDeploy {
-		checkCommonDeployFlags(args[0])
+		name = args[0]
+		checkCommonDeployFlags(name)
 	}
 
 	r := repo.New(cfg)
-	r.Publish()
-
-	if !cfg.Flags.SkipDeploy {
-		d := r.Deploy(args[0])
-		// Makes output less cluttered.
-		d.ManagedFields = nil
-		log.InfoNewline()
-		log.Marshal(d)
-	}
+	d := r.Publish(name)
+	// Makes output less cluttered.
+	d.ManagedFields = nil
+	log.Marshal(d)
 
 	return nil
 }

@@ -42,7 +42,7 @@ func New(cfg *config.Config) *repo {
 
 	app, err := ReadApp(repoPath)
 	if err != nil {
-		log.Fatal("Error reading the Repo's 'app.yaml', try running 'fox init': %v", err)
+		log.Fatal("Error reading the repo's 'app.yaml', try running 'fox init': %v", err)
 	}
 
 	log.Verbose("Opening git repo '%s'", repoPath)
@@ -111,9 +111,13 @@ func (r *repo) CommitAll(msg string) string {
 	return hash.String()
 }
 
-func (r *repo) GetContainerImage(compDirName string) string {
+func (r *repo) GetCompImageFromDir(compDirName string) string {
 	name := utils.Clean(compDirName)
 	commit := r.GetCompCommit(compDirName)
+	return r.GetCompImage(name, commit)
+}
+
+func (r *repo) GetCompImage(name, commit string) string {
 	return fmt.Sprintf("%s/%s/%s:%s", r.cfg.ContainerRegistry.Address, r.app.Name, name, commit)
 }
 

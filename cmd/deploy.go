@@ -12,7 +12,7 @@ var deployCmd = &cobra.Command{
 	Args:   cobra.ExactArgs(1),
 	PreRun: setup,
 	Run:    runDeploy,
-	Short:  "Deploy app using the version of the currently checked out Git commit",
+	Short:  "Deploy KubeFox app using the version from the currently checked out Git commit",
 	Long:   ``,
 }
 
@@ -44,6 +44,5 @@ func runDeploy(cmd *cobra.Command, args []string) {
 	d := r.Deploy(name)
 	// Makes output less cluttered.
 	d.ManagedFields = nil
-	log.InfoNewline()
 	log.Marshal(d)
 }

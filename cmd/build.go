@@ -39,5 +39,5 @@ func addCommonBuildFlags(cmd *cobra.Command) {
 
 func build(cmd *cobra.Command, args []string) {
 	r := repo.New(cfg)
-	r.BuildComp(args[0])
+	r.Build(args[0])
 }

@@ -26,38 +26,36 @@ func Init(cfg *config.Config) {
 
 	app, err := ReadApp(repoPath)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		log.Error("An app definition already exists but appears to be invalid: %v.", err)
-		if !utils.YesNoPrompt("Would you like to reinitialize the repo?", true) {
+		log.Error("An KubeFox app definition already exists but appears to be invalid: %v.", err)
+		if !utils.YesNoPrompt("Would you like to reinitialize the app?", true) {
 			return
 		}
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		log.VerboseMarshal(app, "App definition:")
-		log.Info("A valid app definition already exists.")
+		log.Info("A valid KubeFox app definition already exists.")
 		initGit(repoPath, app, cfg)
 		return
 	}
 
 	app = &App{}
-	log.Info("Let's initialize a KubeFox repo!")
-
+	log.Info("Let's initialize a KubeFox app!")
 	log.InfoNewline()
-	log.Info("To get things started quickly 🦊 Fox can create a hello-world app which includes")
-	log.Info("two components and example environments for testing.")
-	if utils.YesNoPrompt("Would you like to initialize the hello-world app?", false) {
+	log.Info("To get things started quickly 🦊 Fox can create a 'hello-world' KubeFox app which")
+	log.Info("includes two components and example environments for testing.")
+	if utils.YesNoPrompt("Would you like to initialize the 'hello-world' KubeFox app?", false) {
 		initDir(efs.HelloWorldPath, repoPath)
 		initGit(repoPath, app, cfg)
 		return
 	}
-
 	log.InfoNewline()
-	log.Info("Fox needs to create an app definition for the repo. The definition is stored in")
-	log.Info("the 'app.yaml' file in the root of the repo. The first thing it needs is a name")
-	log.Info("for the app. The name is used as part of Kubernetes resource names so it must")
-	log.Info("contain only lowercase alpha-numeric characters and dashes. But don't worry")
-	log.Info("you can enter a more human friendly title and description.")
-	app.Name = utils.NamePrompt("app", utils.Clean(repoPath), true)
-	app.Title = utils.InputPrompt("Enter the app's title", "", false)
-	app.Description = utils.InputPrompt("Enter the app's description", "", false)
+	log.Info("🦊 Fox needs to create an KubeFox app definition. The definition is stored in the")
+	log.Info("'app.yaml' file in the root of the repo. The first thing it needs is a name for")
+	log.Info("the app. The name is used as part of Kubernetes resource names so it must")
+	log.Info("contain only lowercase alpha-numeric characters and dashes. But don't worry you")
+	log.Info("can enter a more human friendly title and description.")
+	app.Name = utils.NamePrompt("KubeFox app", utils.Clean(repoPath), true)
+	app.Title = utils.InputPrompt("Enter the KubeFox app's title", "", false)
+	app.Description = utils.InputPrompt("Enter the KubeFox app's description", "", false)
 
 	WriteApp(repoPath, app)
 	utils.EnsureDir(filepath.Join(repoPath, ComponentsDirName))
@@ -88,7 +86,8 @@ func initGit(repoPath string, app *App, cfg *config.Config) {
 	}
 
 	log.InfoNewline()
-	log.Info("KubeFox repo initialization complete!")
+	log.Info("KubeFox app initialization complete!")
+	log.InfoNewline()
 }
 
 func initDir(in, out string) {
@@ -98,7 +97,7 @@ func initDir(in, out string) {
 	fs.WalkDir(efs.EFS, in,
 		func(efsPath string, d fs.DirEntry, err error) error {
 			if err != nil {
-				log.Fatal("Error initializing repo: %v", err)
+				log.Fatal("Error initializing app: %v", err)
 			}
 			if d.IsDir() {
 				return nil

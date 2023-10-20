@@ -11,7 +11,7 @@ var releaseCmd = &cobra.Command{
 	Args:   cobra.ExactArgs(1),
 	PreRun: setup,
 	Run:    release,
-	Short:  "Release app using the version of the currently checked out Git commit",
+	Short:  "Release app using the version from the currently checked out Git commit",
 	Long: `
 The release command will ensure all components are deployed and then activate 
 their routes. This causes genesis events matching component's routes to be 
