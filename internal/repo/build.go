@@ -21,7 +21,6 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"github.com/moby/patternmatcher/ignorefile"
 	"github.com/xigxog/kubefox-cli/efs"
-	"github.com/xigxog/kubefox-cli/internal/config"
 	"github.com/xigxog/kubefox-cli/internal/log"
 	"github.com/xigxog/kubefox-cli/internal/utils"
 	"github.com/xigxog/kubefox/libs/core/kubefox"
@@ -44,14 +43,10 @@ func (r *repo) BuildComp(compDirName string) string {
 	gitCommit := r.GetCompCommit(compDirName)
 	gitRef := r.GetRefName()
 	regAuth := r.GetRegAuth()
-	localReg := strings.HasPrefix(r.cfg.ContainerRegistry.Address, config.LocalRegistry)
 
-	if !(r.cfg.Flags.ForceBuild || r.cfg.Flags.NoCache || localReg) {
-		if di, err := r.docker.DistributionInspect(context.Background(), img, regAuth); err != nil {
-			log.Verbose("%s", err)
-		} else {
+	if !(r.cfg.Flags.ForceBuild || r.cfg.Flags.NoCache) {
+		if found, _ := r.ensureImageExists(img, false); found {
 			log.Info("Component image '%s' exists, skipping build.", img)
-			log.Verbose("Digest: %s", di.Descriptor.Digest)
 			r.KindLoad(img)
 			return img
 		}
@@ -95,12 +90,12 @@ func (r *repo) BuildComp(compDirName string) string {
 	if err != nil {
 		log.Fatal("Error building container image: %v", err)
 	}
-	logResp(buildResp.Body)
+	logResp(buildResp.Body, true)
 
-	if localReg {
+	if r.cfg.IsLocalRegistry() {
 		log.Verbose("Local registry is set, container image push will be skipped.")
 	}
-	if r.cfg.Flags.PushImage && !localReg {
+	if r.cfg.Flags.PushImage && !r.cfg.IsLocalRegistry() {
 		log.Info("Pushing component image '%s'.", img)
 
 		pushResp, err := r.docker.ImagePush(context.Background(), img, types.ImagePushOptions{
@@ -109,11 +104,60 @@ func (r *repo) BuildComp(compDirName string) string {
 		if err != nil {
 			log.Fatal("Error pushing container image: %v", err)
 		}
-		logResp(pushResp)
+		logResp(pushResp, true)
 	}
 	r.KindLoad(img)
 
 	return img
+}
+
+func (r *repo) ensureImageExists(img string, pull bool) (bool, error) {
+	if r.cfg.IsLocalRegistry() {
+		found := r.imageExistsLocal(img)
+		if !found && pull {
+			return false, fmt.Errorf("component image does not exist locally and no remote registry available")
+		}
+
+		return found, nil
+	}
+
+	if di, err := r.docker.DistributionInspect(context.Background(), img, r.GetRegAuth()); err != nil {
+		log.Verbose("%s", err)
+		return false, err
+
+	} else {
+		log.Verbose("Digest: %s", di.Descriptor.Digest)
+
+		if pull && !r.imageExistsLocal(img) {
+			pullResp, err := r.docker.ImagePull(context.Background(), img, types.ImagePullOptions{
+				RegistryAuth: r.GetRegAuth(),
+			})
+			if err != nil {
+				return false, fmt.Errorf("error pulling component image: %v", err)
+			}
+			if err := logResp(pullResp, false); err != nil {
+				return false, fmt.Errorf("error pulling component image: %v", err)
+			}
+			return true, nil
+		}
+	}
+
+	return true, nil
+}
+
+func (r *repo) imageExistsLocal(img string) bool {
+	l, _ := r.docker.ImageList(context.Background(), types.ImageListOptions{
+		Filters: filters.NewArgs(filters.Arg("reference", img)),
+	})
+
+	found := len(l) > 0
+	if found {
+		log.Verbose("Image '%s' found locally.", img)
+	} else {
+		log.Verbose("Image '%s' not found locally.", img)
+	}
+
+	return found
 }
 
 func (r *repo) KindLoad(img string) {
@@ -126,25 +170,14 @@ func (r *repo) KindLoad(img string) {
 	}
 
 	log.Info("Loading component image '%s' into Kind cluster '%s'.", img, kind)
-
-	l, _ := r.docker.ImageList(context.Background(), types.ImageListOptions{
-		Filters: filters.NewArgs(filters.Arg("reference", img)),
-	})
-	found := len(l) > 0
-
-	if !found {
-		log.Verbose("Component image not found locally, pulling.")
-		pullResp, err := r.docker.ImagePull(context.Background(), img, types.ImagePullOptions{
-			RegistryAuth: r.GetRegAuth(),
-		})
+	if found, err := r.ensureImageExists(img, true); !found {
 		if err != nil {
-			log.Fatal("Error pulling component image: %v", err)
+			log.Fatal("Error loading component image into Kind: %v", err)
 		}
-		logResp(pullResp)
+		log.Fatal("Component image does not exist, please build it first.")
 	}
 
 	cmd := exec.Command("kind", "load", "docker-image", "--name="+kind, img)
-
 	if out, err := cmd.CombinedOutput(); err != nil {
 		log.Error("%s", strings.TrimSpace(string(out)))
 		log.Fatal("Error loading component image into Kind: %v", err)
@@ -166,7 +199,7 @@ func (r *repo) GetRegAuth() string {
 	return base64.StdEncoding.EncodeToString(authCfg)
 }
 
-func logResp(resp io.ReadCloser) {
+func logResp(resp io.ReadCloser, fatal bool) error {
 	defer resp.Close()
 
 	scanner := bufio.NewScanner(resp)
@@ -176,9 +209,15 @@ func logResp(resp io.ReadCloser) {
 		logLine(l, "stream")
 		logLine(l, "status", "id")
 		if s, f := l["error"]; f {
-			log.Fatal("%s", s)
+			if fatal {
+				log.Fatal("%s", s)
+			} else {
+				return fmt.Errorf("%s", s)
+			}
 		}
 	}
+
+	return nil
 }
 
 func logLine(l map[string]any, keys ...string) {

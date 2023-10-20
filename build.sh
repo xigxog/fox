@@ -31,7 +31,7 @@ if [ "$GOOS" == "windows" ]; then
     bin="fox.exe"
 fi
 
-echo "Creating Fox release package..."
+echo "Creating 🦊 Fox release package..."
 echo "Git Commit: $GIT_COMMIT, Git Ref: $GIT_REF, Package: ${rel_dir}/${tar}"
 
 go build \

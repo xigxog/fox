@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/cli/oauth/device"
 	"github.com/xigxog/kubefox-cli/internal/log"
@@ -73,6 +74,10 @@ type ContainerRegistry struct {
 	Token   string `json:"token"`
 }
 
+func (cfg *Config) IsLocalRegistry() bool {
+	return strings.HasPrefix(cfg.ContainerRegistry.Address, LocalRegistry)
+}
+
 func (cfg *Config) Load() {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -84,15 +89,19 @@ func (cfg *Config) Load() {
 
 	b, err := os.ReadFile(cfg.path)
 	if errors.Is(err, fs.ErrNotExist) {
-		log.Info("It looks like this is the first time you are using Fox. Welcome!")
+		log.Info("It looks like this is the first time you are using 🦊 Fox. Welcome!")
+		log.InfoNewline()
+		log.Info("Fox needs some information from you to configure itself. The setup process only")
+		log.Info("needs to be run once, but if you ever want change things you can use the")
+		log.Info("command 'fox config setup'.")
 		log.InfoNewline()
 
 		cfg.Setup()
 	} else if err != nil {
-		log.Fatal("Error reading KubeFox config file: %v", err)
+		log.Fatal("Error reading KubeFox config file '%s': %v", err, cfg.path)
 	}
 	if err := yaml.Unmarshal(b, cfg); err != nil {
-		log.Fatal("Error unmarshaling KubeFox config: %v", err)
+		log.Fatal("Error unmarshaling KubeFox config '%s': %v", err, cfg.path)
 	}
 	if cfg.ContainerRegistry.Address == "" {
 		log.Info("It looks like the container registry is missing from your config. Rerunning")
@@ -124,7 +133,7 @@ func (cfg *Config) Setup() {
 	}
 
 	log.InfoNewline()
-	log.Info("Great! If you don't already have a container registry Fox can help setup the")
+	log.Info("Great! If you don't already have a container registry 🦊 Fox can help setup the")
 	log.Info("GitHub container registry (ghcr.io).")
 	useGH := utils.YesNoPrompt("Would you like to use ghcr.io?", true)
 	if useGH {
@@ -132,7 +141,7 @@ func (cfg *Config) Setup() {
 
 	} else {
 		log.InfoNewline()
-		log.Info("No problem. Fox just needs to know which container registry to use. Please be")
+		log.Info("No problem. 🦊 Fox just needs to know which container registry to use. Please be")
 		log.Info("sure you have permissions to pull and push images to the registry.")
 		cfg.ContainerRegistry.Address = utils.InputPrompt("Enter the container registry you'd like to use", "", true)
 		cfg.ContainerRegistry.Token = utils.InputPrompt("Enter the container registry access token", "", false)
@@ -154,8 +163,8 @@ func (cfg *Config) done() {
 
 func (cfg *Config) setupGitHub() {
 	log.InfoNewline()
-	log.Info("Fox needs to create two access tokens. The first is used by Fox and is only")
-	log.Info("stored locally. It allows Fox to read your GitHub user and organizations and to")
+	log.Info("Fox needs to create two access tokens. The first is used by 🦊 Fox and is only")
+	log.Info("stored locally. It allows 🦊 Fox to read your GitHub user and organizations and to")
 	log.Info("push and pull container images to ghcr.io. This information never leaves your")
 	log.Info("workstation.")
 	log.InfoNewline()
@@ -163,7 +172,7 @@ func (cfg *Config) setupGitHub() {
 	log.Info("ghcr.io. It is stored locally and as a Secret on your Kubernetes cluster.")
 	log.InfoNewline()
 
-	log.Info("This will create the access token for Fox.")
+	log.Info("This will create the access token for 🦊 Fox.")
 	cfg.GitHub.Token = getToken([]string{"read:user", "read:org", "read:packages", "write:packages"})
 	log.InfoNewline()
 	log.Info("Next, this will create the access token for Kubernetes to pull images.")
@@ -233,10 +242,13 @@ func (cfg *Config) Write() {
 		log.Fatal("Error marshaling KubeFox config: %v", err)
 	}
 
+	log.VerboseMarshal(cfg, "config:")
+
 	utils.EnsureDirForFile(cfg.path)
 	if err := os.WriteFile(cfg.path, b, 0600); err != nil {
 		log.Fatal("Error writing KubeFox config file: %v", err)
 	}
+	log.Info("Configuration successfully written to '%s'.", cfg.path)
 }
 
 func (cfg *Config) callGitHub(verb, url string, body any) {

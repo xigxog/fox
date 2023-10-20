@@ -7,28 +7,29 @@ import (
 )
 
 var releaseCmd = &cobra.Command{
-	Use:    "release [name]",
+	Use:    "release [release name]",
 	Args:   cobra.ExactArgs(1),
 	PreRun: setup,
 	Run:    release,
-	Short:  "Release a deployed system",
+	Short:  "Release app using the version of the currently checked out Git commit",
 	Long: `
-The release command will activate the specified deployed KubeFox. This will 
-trigger events matching routes of the system to be automatically sent to the 
-deployed components. The system must be deployed to release it. Either id or 
-tag must be provided.
+The release command will ensure all components are deployed and then activate 
+their routes. This causes genesis events matching component's routes to be 
+automatically sent to the component with the specified environment being 
+injected.
 
 Examples:
-  #
-  fox release --system demo/tag/v1.0.3 --environment dev/tag/v1.2
+  # Create a release named 'staging' using the 'qa' environment.
+  fox release staging --env qa
 `,
 }
 
 func init() {
-	releaseCmd.Flags().StringVarP(&cfg.Flags.Env, "env", "e", "", "Environment resource to release to (required)")
-	releaseCmd.Flags().StringVarP(&cfg.Flags.EnvUID, "env-uid", "", "", "Environment resource UID to release to")
-	releaseCmd.Flags().StringVarP(&cfg.Flags.EnvVersion, "env-version", "", "", "Environment resource version to release to")
+	releaseCmd.Flags().StringVarP(&cfg.Flags.Env, "env", "e", "", "environment resource to release to (required)")
+	releaseCmd.Flags().StringVarP(&cfg.Flags.EnvUID, "env-uid", "", "", "environment resource UID to release to")
+	releaseCmd.Flags().StringVarP(&cfg.Flags.EnvVersion, "env-version", "", "", "environment resource version to release to")
 	addCommonBuildFlags(releaseCmd)
+	addCommonDeployFlags(releaseCmd)
 	releaseCmd.MarkFlagRequired("env")
 
 	rootCmd.AddCommand(releaseCmd)

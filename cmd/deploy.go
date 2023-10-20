@@ -8,11 +8,11 @@ import (
 )
 
 var deployCmd = &cobra.Command{
-	Use:    "deploy [name]",
+	Use:    "deploy [deployment name]",
 	Args:   cobra.ExactArgs(1),
 	PreRun: setup,
 	Run:    runDeploy,
-	Short:  "Deploy components to the KubeFox platform",
+	Short:  "Deploy app using the version of the currently checked out Git commit",
 	Long:   ``,
 }
 
@@ -22,8 +22,9 @@ func init() {
 }
 
 func addCommonDeployFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&cfg.Flags.Platform, "platform", "p", "", "Platform to run Components with")
-	cmd.Flags().StringVarP(&cfg.Flags.Namespace, "namespace", "n", "", "Namespace of Platform")
+	cmd.Flags().StringVarP(&cfg.Flags.Platform, "platform", "p", "", "platform to run components with")
+	cmd.Flags().StringVarP(&cfg.Flags.Namespace, "namespace", "n", "", "namespace of platform")
+	cmd.Flags().DurationVarP(&cfg.Flags.WaitTime, "wait", "", 0, "wait up the specified time for components to be ready")
 }
 
 func checkCommonDeployFlags(name string) {

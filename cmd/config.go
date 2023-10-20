@@ -9,9 +9,9 @@ var cfgCmd = &cobra.Command{
 	Use:              "config",
 	Args:             cobra.NoArgs,
 	PersistentPreRun: setup,
-	Short:            "Configure your KubeFox Client",
+	Short:            "Configure 🦊 Fox",
 	Long: `
-Use the config subcommand to help setup your local CLI environment.
+Use the config subcommand to help setup your local environment.
 `,
 }
 
@@ -21,7 +21,7 @@ var cfgShowCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Marshal(cfg)
 	},
-	Short: "Show your current KubeFox configuration",
+	Short: "Show the current configuration",
 }
 
 var cfgSetupCmd = &cobra.Command{
@@ -32,7 +32,7 @@ var cfgSetupCmd = &cobra.Command{
 			cfg.Setup()
 		}
 	},
-	Short: "Update your current KubeFox configuration",
+	Short: "Run setup to configure 🦊 Fox",
 }
 
 func init() {

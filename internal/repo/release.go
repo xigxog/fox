@@ -12,7 +12,7 @@ import (
 )
 
 func (r *repo) Release(name string) *v1alpha1.Release {
-	p, spec := r.buildDepSpec()
+	p, spec := r.prepareDeployment()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -50,6 +50,8 @@ func (r *repo) Release(name string) *v1alpha1.Release {
 	if err != nil {
 		log.Fatal("%v", err)
 	}
+
+	r.waitForReady(p, spec)
 
 	return rel
 }

@@ -24,14 +24,14 @@ var rootCmd = &cobra.Command{
 	PersistentPreRun: initViper,
 	Short:            "CLI for interacting with KubeFox",
 	Long: `
-🦊 Fox is a CLI for interacting with KubeFox. You can use it to create, build, 
-deploy, and release your KubeFox components.
+🦊 Fox is a CLI for interacting with KubeFox. You can use it to build, deploy, 
+and release your KubeFox apps.
 `,
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.RepoPath, "repo", "r", pwd(), "path of git repo")
-	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.OutFormat, "output", "o", "yaml", `output format. One of: "json", "yaml"`)
+	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.RepoPath, "repo", "r", pwd(), "path of Git repository to operate against")
+	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.OutFormat, "output", "o", "yaml", `output format, one of ["json", "yaml"]`)
 	rootCmd.PersistentFlags().BoolVarP(&cfg.Flags.Info, "info", "i", false, "enable info output")
 	rootCmd.PersistentFlags().BoolVarP(&cfg.Flags.Verbose, "verbose", "v", false, "enable verbose output")
 }

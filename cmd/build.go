@@ -10,12 +10,16 @@ var buildCmd = &cobra.Command{
 	Args:   cobra.ExactArgs(1),
 	PreRun: setup,
 	Run:    build,
-	Short:  "Build and publish an OCI image of your component",
+	Short:  "Build and optionally push an OCI image of component",
 	Long: `
-This will use the specified Cloud Native BuildPack to build, package, and optionally publish the component provided as an OCI image to the registry.
+The build command will use Docker to build the specified component. By default
+components are built using a KubeFox defined Dockerfile. A custom Dockerfile can
+be provided my placing it in the root directory of the component. Please note
+that the build working directory is the root of the repository, not the
+component directory.
 
 Examples:
-  # Build and push container image for my-component
+  # Build and push OCI image for my-component.
   fox build my-component --publish
 `,
 }

@@ -12,7 +12,7 @@ import (
 var verCmd = &cobra.Command{
 	Use:   "version",
 	Run:   runVer,
-	Short: "Show version information of Fox CLI",
+	Short: "Show version information of 🦊 Fox",
 }
 
 func init() {

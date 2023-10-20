@@ -1,5 +1,7 @@
 package config
 
+import "time"
+
 type Flags struct {
 	// persistent flags defined in root command
 	RepoPath  string
@@ -16,6 +18,8 @@ type Flags struct {
 	Namespace  string
 	Platform   string
 	Kind       string
+
+	WaitTime time.Duration
 
 	NoCache    bool
 	PushImage  bool

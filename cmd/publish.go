@@ -13,7 +13,7 @@ var publishCmd = &cobra.Command{
 	Args:   cobra.MaximumNArgs(1),
 	PreRun: setup,
 	RunE:   runPublish,
-	Short:  "The publish commands builds all components, publishes images, and deploys them to KubeFox.",
+	Short:  "Builds, pushes, and deploys app using the version of the currently checked out Git commit",
 }
 
 var (

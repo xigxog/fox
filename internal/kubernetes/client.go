@@ -9,6 +9,8 @@ import (
 	"fmt"
 
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
@@ -22,10 +24,18 @@ const (
 
 type Client struct {
 	client.Client
+
+	KubeConfig *clientcmdapi.Config
 }
 
 func NewClient() *Client {
 	v1alpha1.SchemeBuilder.AddToScheme(scheme.Scheme)
+
+	l := clientcmd.NewDefaultClientConfigLoadingRules()
+	kubeConfig, err := l.Load()
+	if err != nil {
+		log.Fatal("Error reading Kubernetes config file: %v", err)
+	}
 
 	cfg, err := config.GetConfig()
 	if err != nil {
@@ -36,7 +46,7 @@ func NewClient() *Client {
 		log.Fatal("Error setting up Kubernetes client: %v", err)
 	}
 
-	return &Client{Client: c}
+	return &Client{Client: c, KubeConfig: kubeConfig}
 }
 
 func (c *Client) Apply(ctx context.Context, obj client.Object) error {

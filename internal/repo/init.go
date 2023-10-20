@@ -41,7 +41,7 @@ func Init(cfg *config.Config) {
 	log.Info("Let's initialize a KubeFox repo!")
 
 	log.InfoNewline()
-	log.Info("To get things started quickly Fox can create a hello-world app which includes")
+	log.Info("To get things started quickly 🦊 Fox can create a hello-world app which includes")
 	log.Info("two components and example environments for testing.")
 	if utils.YesNoPrompt("Would you like to initialize the hello-world app?", false) {
 		initDir(efs.HelloWorldPath, repoPath)

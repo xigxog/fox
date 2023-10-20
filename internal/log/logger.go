@@ -69,6 +69,10 @@ func VerboseMarshal(o any, format string, v ...any) {
 	log.Debugf(format, v...)
 }
 
+func Warn(format string, v ...any) {
+	log.Warnf(format, v...)
+}
+
 func Error(format string, v ...any) {
 	log.Errorf(format, v...)
 }
