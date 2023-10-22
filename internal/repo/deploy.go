@@ -5,18 +5,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/xigxog/fox/internal/log"
 	"github.com/xigxog/fox/internal/utils"
 	"github.com/xigxog/kubefox/libs/api/kubernetes/v1alpha1"
-	"github.com/xigxog/kubefox/libs/core/kubefox"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (r *repo) Deploy(name string) *v1alpha1.Deployment {
@@ -80,39 +75,22 @@ func (r *repo) applyIPS(ctx context.Context, p *v1alpha1.Platform, spec *v1alpha
 // ensures all images exist. If there are any issues it will prompt the user to
 // correct them.
 func (r *repo) prepareDeployment() (*v1alpha1.Platform, *v1alpha1.DeploymentSpec) {
-	nn := types.NamespacedName{
-		Namespace: r.cfg.Flags.Namespace,
-		Name:      r.cfg.Flags.Platform,
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	spec := r.getDepSpec()
+	platform, err := r.k8s.GetPlatform(ctx)
+	if err != nil {
+		log.Fatal("Error getting platform :%v", err)
 	}
-	if nn.Name == "" {
-		nn.Namespace = r.cfg.KubeFox.Namespace
-		nn.Name = r.cfg.KubeFox.Platform
-
-	}
-
-	platform := &v1alpha1.Platform{}
-	if nn.Name == "" {
-		platform = r.pickPlatform()
-
-	} else {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-		defer cancel()
-
-		if err := r.k8s.Get(ctx, nn, platform); err != nil {
-			if apierrors.IsNotFound(err) {
-				platform = r.pickPlatform()
-			} else {
-				log.Fatal("Unable to get KubeFox platform: %v", err)
-			}
-		}
-	}
-
-	p, spec := platform, r.getDepSpec()
 
 	allFound := true
 	for n, c := range spec.Components {
 		img := r.GetCompImage(n, c.Commit)
 		if found, _ := r.ensureImageExists(img, false); found {
+			if r.cfg.IsRegistryLocal() {
+				r.KindLoad(img)
+			}
 			log.Info("Component image '%s' exists.", img)
 		} else {
 			log.Warn("Component image '%s' does not exist.", img)
@@ -132,7 +110,7 @@ func (r *repo) prepareDeployment() (*v1alpha1.Platform, *v1alpha1.DeploymentSpec
 		}
 	}
 
-	return p, spec
+	return platform, spec
 }
 
 func (r *repo) getDepSpec() *v1alpha1.DeploymentSpec {
@@ -170,101 +148,6 @@ func (r *repo) getDepSpec() *v1alpha1.DeploymentSpec {
 	return depSpec
 }
 
-func (r *repo) pickPlatform() *v1alpha1.Platform {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
-	pList, err := r.k8s.ListPlatforms(ctx)
-	if err != nil {
-		log.Fatal("%v", err)
-	}
-
-	switch len(pList) {
-	case 0:
-		if !r.cfg.Flags.Info {
-			context := r.k8s.KubeConfig.CurrentContext
-			cluster := r.k8s.KubeConfig.Contexts[context].Cluster
-			log.Warn("No KubeFox platforms found on the current cluster '%s'.", cluster)
-		}
-		log.Info("You need to have a KubeFox platform instance running to deploy your components.")
-		log.Info("Don't worry, 🦊 Fox can create one for you.")
-		if utils.YesNoPrompt("Would you like to create a KubeFox platform?", true) {
-			return r.createPlatform()
-		} else {
-			log.Fatal("Error you must create a KubeFox platform before deploying components.")
-		}
-	case 1:
-		return &pList[0]
-	}
-
-	for i, p := range pList {
-		log.Info("%d. %s/%s", i+1, p.Namespace, p.Name)
-	}
-
-	var input string
-	log.Printf("Select the KubeFox platform to use: ")
-	fmt.Scanln(&input)
-	i, err := strconv.Atoi(input)
-	if err != nil {
-		return r.pickPlatform()
-	}
-	i = i - 1
-	if i < 0 || i >= len(pList) {
-		return r.pickPlatform()
-	}
-
-	p := &pList[i]
-	if len(pList) > 1 {
-		if utils.YesNoPrompt("Remember selected KubeFox platform?", true) {
-			r.cfg.KubeFox.Namespace = p.Namespace
-			r.cfg.KubeFox.Platform = p.Name
-			r.cfg.Write()
-		}
-	}
-	log.InfoNewline()
-
-	return p
-}
-
-func (r *repo) createPlatform() *v1alpha1.Platform {
-	name := utils.NamePrompt("KubeFox platform", "", true)
-	namespace := utils.InputPrompt("Enter the Kubernetes namespace of the KubeFox platform",
-		fmt.Sprintf("kubefox-%s", name), true)
-	log.InfoNewline()
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
-	ns := &corev1.Namespace{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: corev1.SchemeGroupVersion.Identifier(),
-			Kind:       "Namespace",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: namespace,
-		},
-	}
-	if err := r.k8s.Apply(ctx, ns); err != nil {
-		log.Fatal("%v", err)
-	}
-
-	p := &v1alpha1.Platform{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1alpha1.GroupVersion.Identifier(),
-			Kind:       "Platform",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
-	if err := r.k8s.Apply(ctx, p); err != nil {
-		log.Fatal("%v", err)
-	}
-
-	return p
-}
-
 func (r *repo) waitForReady(p *v1alpha1.Platform, spec *v1alpha1.DeploymentSpec) {
 	if r.cfg.Flags.WaitTime <= 0 {
 		return
@@ -273,56 +156,5 @@ func (r *repo) waitForReady(p *v1alpha1.Platform, spec *v1alpha1.DeploymentSpec)
 	ctx, cancel := context.WithTimeout(context.Background(), r.cfg.Flags.WaitTime)
 	defer cancel()
 
-	log.Info("Waiting for KubeFox platform '%s' to be ready.", p.Name)
-	if err := r.checkAllPodsRdy(ctx, p, "nats", ""); err != nil {
-		log.Fatal("Error while waiting: %v", err)
-	}
-	if err := r.checkAllPodsRdy(ctx, p, "broker", ""); err != nil {
-		log.Fatal("Error while waiting: %v", err)
-	}
-
-	for n, c := range spec.Components {
-		log.Info("Waiting for component '%s' to be ready.", n)
-		if err := r.checkAllPodsRdy(ctx, p, n, c.Commit); err != nil {
-			log.Fatal("Error while waiting: %v", err)
-		}
-	}
-	log.InfoNewline()
-}
-
-func (r *repo) checkAllPodsRdy(ctx context.Context, p *v1alpha1.Platform, comp, commit string) error {
-	log.Verbose("Waiting for component '%s' with commit '%s' to be ready.", comp, commit)
-
-	hasLabels := client.MatchingLabels{
-		kubefox.LabelK8sComponent: comp,
-		kubefox.LabelK8sPlatform:  p.Name,
-	}
-	if commit != "" {
-		hasLabels[kubefox.LabelK8sComponentCommit] = commit
-	}
-
-	l := &corev1.PodList{}
-	if err := r.k8s.List(ctx, l, client.InNamespace(p.Namespace), hasLabels); err != nil {
-		return fmt.Errorf("unable to list pods: %w", err)
-	}
-
-	ready := len(l.Items) > 0
-	for _, p := range l.Items {
-		for _, c := range p.Status.ContainerStatuses {
-			if !c.Ready {
-				ready = false
-				break
-			}
-		}
-	}
-	if !ready {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		time.Sleep(time.Second * 3)
-		return r.checkAllPodsRdy(ctx, p, comp, commit)
-	}
-	log.Verbose("Component '%s' with commit '%s' is ready.", comp, commit)
-
-	return nil
+	r.k8s.WaitPlatformReady(ctx, p, spec)
 }

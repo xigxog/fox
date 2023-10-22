@@ -22,8 +22,8 @@ func init() {
 }
 
 func addCommonDeployFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&cfg.Flags.Platform, "platform", "p", "", "platform to run components with")
 	cmd.Flags().StringVarP(&cfg.Flags.Namespace, "namespace", "n", "", "namespace of platform")
+	cmd.Flags().StringVarP(&cfg.Flags.Platform, "platform", "p", "", "name of platform to utilize")
 	cmd.Flags().DurationVarP(&cfg.Flags.WaitTime, "wait", "", 0, "wait up the specified time for components to be ready")
 }
 

@@ -74,7 +74,7 @@ type ContainerRegistry struct {
 	Token   string `json:"token"`
 }
 
-func (cfg *Config) IsLocalRegistry() bool {
+func (cfg *Config) IsRegistryLocal() bool {
 	return strings.HasPrefix(cfg.ContainerRegistry.Address, LocalRegistry)
 }
 

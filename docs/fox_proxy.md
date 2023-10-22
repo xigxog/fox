@@ -1,22 +1,30 @@
-## fox publish
+## fox proxy
 
-Builds, pushes, and deploys KubeFox apps using the version of the currently checked out Git commit
+Port forward local port to broker's HTTP server adapter
+
+### Synopsis
+
+
+The proxy command will inspect the Kubernetes cluster and find an available
+broker to forward a local port to. This port can then be used to make HTTP
+requests to the broker's HTTP server adapter. This is especially useful during
+development and testing.
+
+Examples:
+# Port forward local port 8080 and wait if no brokers are available.
+fox proxy 8080 --wait
+
 
 ```
-fox publish [deploy-name] [flags]
+fox proxy [local port] [flags]
 ```
 
 ### Options
 
 ```
-      --force              force build even if component image exists
-  -h, --help               help for publish
-  -k, --kind string        if provided the built image will be loaded into the Kind cluster
+  -h, --help               help for proxy
   -n, --namespace string   namespace of platform
-      --no-cache           do not use cache when building image
   -p, --platform string    name of platform to utilize
-      --skip-deploy        do not perform deployment after build
-      --skip-push          do not push image after build
       --wait duration      wait up the specified time for components to be ready
 ```
 

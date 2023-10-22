@@ -92,10 +92,10 @@ func (r *repo) Build(compDirName string) string {
 	}
 	logResp(buildResp.Body, true)
 
-	if r.cfg.IsLocalRegistry() {
+	if r.cfg.IsRegistryLocal() {
 		log.Verbose("Local registry is set, container image push will be skipped.")
 	}
-	if r.cfg.Flags.PushImage && !r.cfg.IsLocalRegistry() {
+	if r.cfg.Flags.PushImage && !r.cfg.IsRegistryLocal() {
 		log.Info("Pushing component image '%s'.", img)
 
 		pushResp, err := r.docker.ImagePush(context.Background(), img, types.ImagePushOptions{
@@ -113,8 +113,8 @@ func (r *repo) Build(compDirName string) string {
 }
 
 func (r *repo) ensureImageExists(img string, pull bool) (bool, error) {
-	if r.cfg.IsLocalRegistry() {
-		found := r.imageExistsLocal(img)
+	if r.cfg.IsRegistryLocal() {
+		found := r.IsImageLocal(img)
 		if !found && pull {
 			return false, fmt.Errorf("component image does not exist locally and no remote registry available")
 		}
@@ -129,7 +129,7 @@ func (r *repo) ensureImageExists(img string, pull bool) (bool, error) {
 	} else {
 		log.Verbose("Digest: %s", di.Descriptor.Digest)
 
-		if pull && !r.imageExistsLocal(img) {
+		if pull && !r.IsImageLocal(img) {
 			pullResp, err := r.docker.ImagePull(context.Background(), img, types.ImagePullOptions{
 				RegistryAuth: r.GetRegAuth(),
 			})
@@ -146,7 +146,7 @@ func (r *repo) ensureImageExists(img string, pull bool) (bool, error) {
 	return true, nil
 }
 
-func (r *repo) imageExistsLocal(img string) bool {
+func (r *repo) IsImageLocal(img string) bool {
 	l, _ := r.docker.ImageList(context.Background(), types.ImageListOptions{
 		Filters: filters.NewArgs(filters.Arg("reference", img)),
 	})

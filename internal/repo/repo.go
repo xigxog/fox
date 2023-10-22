@@ -61,7 +61,7 @@ func New(cfg *config.Config) *repo {
 		app:     app,
 		path:    repoPath,
 		gitRepo: gitRepo,
-		k8s:     kubernetes.NewClient(),
+		k8s:     kubernetes.NewClient(cfg),
 		docker:  d,
 	}
 }
