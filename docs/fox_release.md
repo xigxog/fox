@@ -11,8 +11,8 @@ automatically sent to the component with the specified environment being
 injected.
 
 Examples:
-##### Create a release named 'staging' using the 'qa' environment.
-fox release staging --env qa
+	# Create a release named 'staging' using the 'qa' environment.
+	fox release staging --env qa
 
 
 ```
