@@ -3,7 +3,7 @@
 Deploy KubeFox app using the version from the currently checked out Git commit
 
 ```
-fox deploy [deployment name] [flags]
+fox deploy (deployment name) [flags]
 ```
 
 ### Options

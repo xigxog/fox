@@ -9,7 +9,7 @@ import (
 )
 
 var publishCmd = &cobra.Command{
-	Use:    "publish [deploy-name]",
+	Use:    "publish (deploy-name)",
 	Args:   cobra.MaximumNArgs(1),
 	PreRun: setup,
 	RunE:   runPublish,

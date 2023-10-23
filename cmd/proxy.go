@@ -9,7 +9,7 @@ import (
 )
 
 var proxyCmd = &cobra.Command{
-	Use:    "proxy [local port]",
+	Use:    "proxy (local port)",
 	Args:   cobra.ExactArgs(1),
 	PreRun: setup,
 	Run:    runProxy,

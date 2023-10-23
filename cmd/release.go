@@ -7,7 +7,7 @@ import (
 )
 
 var releaseCmd = &cobra.Command{
-	Use:    "release [release name]",
+	Use:    "release (release name)",
 	Args:   cobra.ExactArgs(1),
 	PreRun: setup,
 	Run:    release,

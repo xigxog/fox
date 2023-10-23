@@ -29,7 +29,7 @@ Examples:
 
 
 ```
-fox proxy [local port] [flags]
+fox proxy (local port) [flags]
 ```
 
 ### Options

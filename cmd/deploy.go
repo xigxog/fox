@@ -8,7 +8,7 @@ import (
 )
 
 var deployCmd = &cobra.Command{
-	Use:    "deploy [deployment name]",
+	Use:    "deploy (deployment name)",
 	Args:   cobra.ExactArgs(1),
 	PreRun: setup,
 	Run:    runDeploy,

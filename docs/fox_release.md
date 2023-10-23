@@ -17,7 +17,7 @@ Examples:
 
 
 ```
-fox release [release name] [flags]
+fox release (release name) [flags]
 ```
 
 ### Options

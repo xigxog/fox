@@ -18,7 +18,7 @@ Examples:
 
 
 ```
-fox build [component name] [flags]
+fox build (component name) [flags]
 ```
 
 ### Options

@@ -6,7 +6,7 @@ import (
 )
 
 var buildCmd = &cobra.Command{
-	Use:    "build [component name]",
+	Use:    "build (component name)",
 	Args:   cobra.ExactArgs(1),
 	PreRun: setup,
 	Run:    build,

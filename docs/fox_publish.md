@@ -3,7 +3,7 @@
 Builds, pushes, and deploys KubeFox apps using the version of the currently checked out Git commit
 
 ```
-fox publish [deploy-name] [flags]
+fox publish (deploy-name) [flags]
 ```
 
 ### Options
