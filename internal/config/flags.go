@@ -5,6 +5,7 @@ import "time"
 type Flags struct {
 	// persistent flags defined in root command
 	RepoPath  string
+	AppPath   string
 	OutFormat string
 
 	Info    bool
@@ -12,12 +13,13 @@ type Flags struct {
 
 	// flags used by subcommands
 	Builder    string
+	Deployment string
 	Env        string
 	EnvUID     string
 	EnvVersion string
+	Kind       string
 	Namespace  string
 	Platform   string
-	Kind       string
 
 	WaitTime time.Duration
 

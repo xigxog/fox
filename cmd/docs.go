@@ -18,7 +18,8 @@ var docsCmd = &cobra.Command{
 	Short: "Generate docs for 🦊 Fox",
 	Long: `
 Run this command to automatically generate 🦊 Fox documentation. Output is 
-placed in the subdirectory docs of the working directory.`,
+placed in the subdirectory docs of the working directory.
+`,
 }
 
 func init() {

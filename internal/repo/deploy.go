@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/xigxog/fox/internal/log"
@@ -40,6 +39,26 @@ func (r *repo) Deploy(name string) *v1alpha1.Deployment {
 	r.waitForReady(p, spec)
 
 	return d
+}
+
+func (r *repo) Publish(deployName string) *v1alpha1.Deployment {
+	compsDir, err := os.ReadDir(r.ComponentsDir())
+	if err != nil {
+		log.Fatal("Error listing components dir '%s': %v", r.ComponentsDir(), err)
+	}
+
+	for _, compDir := range compsDir {
+		if !compDir.IsDir() {
+			continue
+		}
+		r.Build(compDir.Name())
+		log.InfoNewline()
+	}
+
+	if !r.cfg.Flags.SkipDeploy && deployName != "" {
+		return r.Deploy(deployName)
+	}
+	return nil
 }
 
 func (r *repo) applyIPS(ctx context.Context, p *v1alpha1.Platform, spec *v1alpha1.DeploymentSpec) {
@@ -87,17 +106,17 @@ func (r *repo) prepareDeployment() (*v1alpha1.Platform, *v1alpha1.DeploymentSpec
 	allFound := true
 	for n, c := range spec.Components {
 		img := r.GetCompImage(n, c.Commit)
-		if found, _ := r.ensureImageExists(img, false); found {
+		if found, _ := r.DoesImageExists(img, false); found {
+			log.Info("Component image '%s' exists.", img)
 			if r.cfg.IsRegistryLocal() {
 				r.KindLoad(img)
 			}
-			log.Info("Component image '%s' exists.", img)
 		} else {
 			log.Warn("Component image '%s' does not exist.", img)
 			allFound = false
 		}
+		log.InfoNewline()
 	}
-	log.InfoNewline()
 
 	if !allFound {
 		log.Info("There are one or more missing component images. 🦊 Fox will need to build and")
@@ -114,10 +133,9 @@ func (r *repo) prepareDeployment() (*v1alpha1.Platform, *v1alpha1.DeploymentSpec
 }
 
 func (r *repo) getDepSpec() *v1alpha1.DeploymentSpec {
-	compsDirPath := filepath.Join(r.cfg.Flags.RepoPath, ComponentsDirName)
-	compsDir, err := os.ReadDir(compsDirPath)
+	compsDir, err := os.ReadDir(r.ComponentsDir())
 	if err != nil {
-		log.Fatal("Error listing components dir '%s': %v", compsDirPath, err)
+		log.Fatal("Error listing components dir '%s': %v", r.ComponentsDir(), err)
 	}
 
 	depSpec := &v1alpha1.DeploymentSpec{}

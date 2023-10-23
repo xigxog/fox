@@ -38,23 +38,22 @@ type DockerfileTar struct {
 
 func (r *repo) Build(compDirName string) string {
 	img := r.GetCompImageFromDir(compDirName)
-	compDir := filepath.Join(ComponentsDirName, compDirName)
+	compDir := r.ComponentAppSubpath(compDirName)
 	compName := utils.Clean(compDirName)
 	gitCommit := r.GetCompCommit(compDirName)
 	gitRef := r.GetRefName()
 	regAuth := r.GetRegAuth()
 
 	if !(r.cfg.Flags.ForceBuild || r.cfg.Flags.NoCache) {
-		if found, _ := r.ensureImageExists(img, false); found {
+		if found, _ := r.DoesImageExists(img, false); found {
 			log.Info("Component image '%s' exists, skipping build.", img)
 			r.KindLoad(img)
-			log.InfoNewline()
 			return img
 		}
 	}
 
 	log.Info("Building component image '%s'.", img)
-	dfPath := filepath.Join(r.cfg.Flags.RepoPath, ComponentsDirName, compDirName, "Dockerfile")
+	dfPath := filepath.Join(r.ComponentDir(compDirName), "Dockerfile")
 	df, err := os.ReadFile(dfPath)
 	if err != nil {
 		log.Verbose("Using default Dockerfile for build")
@@ -63,7 +62,7 @@ func (r *repo) Build(compDirName string) string {
 		log.Verbose("Using custom Dockerfile '%s' for build", dfPath)
 	}
 
-	dfi, err := NewDFI(r.path, df)
+	dfi, err := NewDFI(r.appPath, df)
 	if err != nil {
 		log.Fatal("Error creating container tar: %v", err)
 	}
@@ -108,11 +107,10 @@ func (r *repo) Build(compDirName string) string {
 	}
 
 	r.KindLoad(img)
-	log.InfoNewline()
 	return img
 }
 
-func (r *repo) ensureImageExists(img string, pull bool) (bool, error) {
+func (r *repo) DoesImageExists(img string, pull bool) (bool, error) {
 	if r.cfg.IsRegistryLocal() {
 		found := r.IsImageLocal(img)
 		if !found && pull {
@@ -171,7 +169,7 @@ func (r *repo) KindLoad(img string) {
 	}
 
 	log.Info("Loading component image '%s' into Kind cluster '%s'.", img, kind)
-	if found, err := r.ensureImageExists(img, true); !found {
+	if found, err := r.DoesImageExists(img, true); !found {
 		if err != nil {
 			log.Fatal("Error loading component image into Kind: %v", err)
 		}

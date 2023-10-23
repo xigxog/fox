@@ -15,6 +15,40 @@ import (
 
 var specChars = regexp.MustCompile(`[^a-z0-9]`)
 
+func Wd() string {
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatal("Error getting working dir: %v", err)
+	}
+
+	return filepath.Clean(wd)
+}
+
+func Find(file, path, stop string) string {
+	log.Verbose("looking for %s in %s, stopping at %s", file, path, stop)
+	if _, err := os.Stat(filepath.Join(path, file)); err == nil {
+		log.Verbose("found %s in %s", file, path)
+		return path
+	}
+
+	if path == stop || path == string(filepath.Separator) {
+		return ""
+	}
+
+	return Find(file, filepath.Join(path, ".."), stop)
+}
+
+func Subpath(path, root string) string {
+	return "" +
+		strings.TrimPrefix( // trim separator
+			strings.TrimPrefix( // trim repo path
+				path,
+				root,
+			),
+			string(filepath.Separator),
+		)
+}
+
 func FileExists(path string) bool {
 	info, err := os.Stat(path)
 	if errors.Is(err, fs.ErrNotExist) {

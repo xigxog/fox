@@ -4,6 +4,7 @@ import (
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	"bytes"
+	"net"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
@@ -59,6 +60,8 @@ type PortForwardRequest struct {
 }
 
 type PortForward struct {
+	LocalPort int32
+
 	pfer    *portforward.PortForwarder
 	stopCh  chan struct{}
 	readyCh chan struct{}
@@ -349,12 +352,21 @@ func (c *Client) PortForward(ctx context.Context, req *PortForwardRequest) (*Por
 		}
 	}
 	if req.LocalPort == 0 {
-		req.LocalPort = 8080
+		// Find available local port.
+		l, err := net.Listen("tcp", ":0")
+		if err != nil {
+			return nil, err
+		}
+		req.LocalPort = int32(l.Addr().(*net.TCPAddr).Port)
+		if err := l.Close(); err != nil {
+			return nil, err
+		}
 	}
 
 	pf := &PortForward{
-		stopCh:  make(chan struct{}, 1),
-		readyCh: make(chan struct{}),
+		LocalPort: req.LocalPort,
+		stopCh:    make(chan struct{}, 1),
+		readyCh:   make(chan struct{}),
 	}
 
 	scheme := "https"
@@ -399,6 +411,8 @@ func (c *Client) PortForward(ctx context.Context, req *PortForwardRequest) (*Por
 
 	// Wait for port forward to be ready.
 	<-pf.readyCh
+	log.Verbose("Port forward ready; pod: '%s', podPort: '%d', localPort: '%d'.",
+		req.BrokerPod, req.BrokerPort, req.LocalPort)
 
 	return pf, nil
 }

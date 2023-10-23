@@ -22,9 +22,12 @@ import (
 )
 
 func Init(cfg *config.Config) {
-	repoPath := cfg.Flags.RepoPath
+	cfg.CleanPaths(true)
 
-	app, err := ReadApp(repoPath)
+	repoPath := cfg.Flags.RepoPath
+	appPath := cfg.Flags.AppPath
+
+	app, err := ReadApp(appPath)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		log.Error("An KubeFox app definition already exists but appears to be invalid: %v.", err)
 		if !utils.YesNoPrompt("Would you like to reinitialize the app?", true) {
@@ -43,7 +46,7 @@ func Init(cfg *config.Config) {
 	log.Info("To get things started quickly 🦊 Fox can create a 'hello-world' KubeFox app which")
 	log.Info("includes two components and example environments for testing.")
 	if utils.YesNoPrompt("Would you like to initialize the 'hello-world' KubeFox app?", false) {
-		initDir(efs.HelloWorldPath, repoPath)
+		initDir(efs.HelloWorldPath, appPath)
 		initGit(repoPath, app, cfg)
 		return
 	}
@@ -53,12 +56,11 @@ func Init(cfg *config.Config) {
 	log.Info("the app. The name is used as part of Kubernetes resource names so it must")
 	log.Info("contain only lowercase alpha-numeric characters and dashes. But don't worry you")
 	log.Info("can enter a more human friendly title and description.")
-	app.Name = utils.NamePrompt("KubeFox app", utils.Clean(repoPath), true)
+	app.Name = utils.NamePrompt("KubeFox app", utils.Clean(appPath), true)
 	app.Title = utils.InputPrompt("Enter the KubeFox app's title", "", false)
 	app.Description = utils.InputPrompt("Enter the KubeFox app's description", "", false)
 
-	WriteApp(repoPath, app)
-	utils.EnsureDir(filepath.Join(repoPath, ComponentsDirName))
+	WriteApp(appPath, app)
 	initGit(repoPath, app, cfg)
 }
 
@@ -72,22 +74,31 @@ func initGit(repoPath string, app *App, cfg *config.Config) {
 		log.Fatal("Error initializing git repo: %v", err)
 	}
 
+	r := New(cfg)
+	utils.EnsureDir(r.ComponentsDir())
+
 	if !alreadyExists {
+		var remoteURL string
 		if cfg.GitHub.Org.Name != "" {
-			nr.CreateRemote(&gitcfg.RemoteConfig{
-				Name: "origin",
-				URLs: []string{
-					fmt.Sprintf("https://github.com/%s/%s.git", cfg.GitHub.Org.Name, app.Name),
-				},
-			})
+			remoteURL = fmt.Sprintf("https://github.com/%s/%s.git", cfg.GitHub.Org.Name, filepath.Base(repoPath))
 		}
-		r := New(cfg)
+
+		remoteURL = utils.InputPrompt("Enter URL for remote Git repo", remoteURL, false)
+		if remoteURL != "" {
+			_, err := nr.CreateRemote(&gitcfg.RemoteConfig{
+				Name: "origin",
+				URLs: []string{remoteURL},
+			})
+			if err != nil {
+				log.Warn("Unable to set remote Git repo: %v", err)
+			}
+		}
+
 		r.CommitAll("And so it begins...")
 	}
 
 	log.InfoNewline()
 	log.Info("KubeFox app initialization complete!")
-	log.InfoNewline()
 }
 
 func initDir(in, out string) {

@@ -112,6 +112,40 @@ func (cfg *Config) Load() {
 	}
 }
 
+func (cfg *Config) CleanPaths(defAppToWd bool) {
+	var err error
+
+	if cfg.Flags.RepoPath == "" {
+		cfg.Flags.RepoPath = utils.Find(".git", utils.Wd(), string(filepath.Separator))
+	}
+	cfg.Flags.RepoPath, err = filepath.Abs(cfg.Flags.RepoPath)
+	if err != nil {
+		log.Fatal("Unable to resolve repo path: %v", err)
+	}
+
+	if cfg.Flags.AppPath == "" {
+		if defAppToWd {
+			cfg.Flags.AppPath = utils.Wd()
+		} else {
+			cfg.Flags.AppPath = utils.Find("app.yaml", utils.Wd(), cfg.Flags.RepoPath)
+		}
+	}
+	cfg.Flags.AppPath, err = filepath.Abs(cfg.Flags.AppPath)
+	if err != nil {
+		log.Fatal("Unable to resolve app path: %v", err)
+	}
+
+	log.Verbose("Repo path: %s", cfg.Flags.RepoPath)
+	log.Verbose("App path: %s", cfg.Flags.AppPath)
+
+	if cfg.Flags.AppPath == "" {
+		log.Fatal("Could not find app definition (app.yaml).")
+	}
+	if !strings.HasPrefix(cfg.Flags.AppPath, cfg.Flags.RepoPath) {
+		log.Fatal("The app is not part of the Git repo.")
+	}
+}
+
 func (cfg *Config) Setup() {
 	log.Info("Please make sure your workstation has Docker installed (https://docs.docker.com/engine/install)")
 	log.Info("and that KubeFox is installed (https://docs.kubefox.io/install) on your Kubernetes cluster.")
@@ -145,8 +179,8 @@ func (cfg *Config) Setup() {
 		cfg.ContainerRegistry.Address = utils.InputPrompt("Enter the container registry you'd like to use", "", true)
 		cfg.ContainerRegistry.Token = utils.InputPrompt("Enter the container registry access token", "", false)
 	}
-
 	log.InfoNewline()
+
 	cfg.done()
 }
 
@@ -157,7 +191,6 @@ func (cfg *Config) done() {
 	log.Info("Congrats, you are ready to use KubeFox!")
 	log.Info("Check out the quickstart for next steps (https://docs.kubefox.io/quickstart/).")
 	log.Info("If you run into any problems please let us know on GitHub (https://github.com/xigxog/kubefox/issues).")
-	log.InfoNewline()
 }
 
 func (cfg *Config) setupGitHub() {
@@ -187,11 +220,11 @@ func (cfg *Config) setupGitHub() {
 		log.Fatal("please create one (https://bit.ly/3mNYkh1) before continuing.")
 	case 1:
 		cfg.GitHub.Org = *orgs[0]
+		log.InfoNewline()
 	default:
 		cfg.GitHub.Org = *pickOrg(orgs)
 	}
 	cfg.ContainerRegistry.Address = fmt.Sprintf("ghcr.io/%s", cfg.GitHub.Org.Name)
-	log.InfoNewline()
 }
 
 func getToken(scopes []string) string {
@@ -199,8 +232,7 @@ func getToken(scopes []string) string {
 	if err != nil {
 		log.Fatal("%v", err)
 	}
-	log.Printf("Copy this code '%s', then open '%s' in your browser.", code.UserCode, code.VerificationURI)
-	log.InfoNewline()
+	log.Printf("Copy this code '%s', then open '%s' in your browser.\n", code.UserCode, code.VerificationURI)
 	accToken, err := device.Wait(context.Background(), http.DefaultClient, "https://github.com/login/oauth/access_token",
 		device.WaitOptions{
 			ClientID:   GitHubClientId,

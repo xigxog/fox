@@ -6,18 +6,18 @@ import (
 )
 
 var cfgCmd = &cobra.Command{
-	Use:              "config",
-	Args:             cobra.NoArgs,
-	PersistentPreRun: setup,
-	Short:            "Configure 🦊 Fox",
+	Use:   "config",
+	Args:  cobra.NoArgs,
+	Short: "Configure 🦊 Fox",
 	Long: `
 Use the config subcommand to help setup your local environment.
 `,
 }
 
 var cfgShowCmd = &cobra.Command{
-	Use:  "show",
-	Args: cobra.NoArgs,
+	Use:    "show",
+	Args:   cobra.NoArgs,
+	PreRun: setup,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Marshal(cfg)
 	},
@@ -25,8 +25,9 @@ var cfgShowCmd = &cobra.Command{
 }
 
 var cfgSetupCmd = &cobra.Command{
-	Use:  "setup",
-	Args: cobra.NoArgs,
+	Use:    "setup",
+	Args:   cobra.NoArgs,
+	PreRun: setup,
 	Run: func(cmd *cobra.Command, args []string) {
 		if !cfg.Fresh {
 			cfg.Setup()

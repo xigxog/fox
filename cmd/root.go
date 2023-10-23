@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -30,7 +28,8 @@ and release your KubeFox apps.
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.RepoPath, "repo", "r", pwd(), "path of Git repository to operate against")
+	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.RepoPath, "repo", "r", "", "path to directory containing Git repository")
+	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.AppPath, "app", "a", "", "path to directory containing KubeFox app")
 	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.OutFormat, "output", "o", "yaml", `output format, one of ["json", "yaml"]`)
 	rootCmd.PersistentFlags().BoolVarP(&cfg.Flags.Info, "info", "i", false, "enable info output")
 	rootCmd.PersistentFlags().BoolVarP(&cfg.Flags.Verbose, "verbose", "v", false, "enable verbose output")
@@ -50,6 +49,8 @@ func initViper(cmd *cobra.Command, args []string) {
 }
 
 func Execute() {
+	defer log.Logger().Sync()
+
 	err := rootCmd.Execute()
 	if err != nil {
 		log.Fatal("%v", err)
@@ -63,17 +64,11 @@ func setup(cmd *cobra.Command, args []string) {
 	ctrl.SetLogger(logr.Logger{})
 
 	cfg.Load()
-
-	log.Verbose("gitCommit: %s, gitRef: %s", kubefox.GitCommit, kubefox.GitRef)
-}
-
-func pwd() string {
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Fatal("Error getting working dir: %v", err)
+	if cfg.Fresh {
+		log.InfoNewline()
 	}
 
-	return filepath.Clean(wd)
+	log.Verbose("gitCommit: %s, gitRef: %s", kubefox.GitCommit, kubefox.GitRef)
 }
 
 func getOutFormat() string {

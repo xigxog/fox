@@ -16,14 +16,12 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const (
-	ComponentsDirName = "components"
-)
-
 type repo struct {
-	cfg  *config.Config
-	app  *App
-	path string
+	cfg *config.Config
+	app *App
+
+	rootPath string
+	appPath  string
 
 	gitRepo *git.Repository
 	k8s     *kubernetes.Client
@@ -38,9 +36,16 @@ type App struct {
 }
 
 func New(cfg *config.Config) *repo {
-	repoPath := cfg.Flags.RepoPath
+	cfg.CleanPaths(false)
 
-	app, err := ReadApp(repoPath)
+	repoPath := cfg.Flags.RepoPath
+	appPath := cfg.Flags.AppPath
+
+	if !strings.HasPrefix(appPath, repoPath) {
+		log.Fatal("The app is not part of the Git repo.")
+	}
+
+	app, err := ReadApp(appPath)
 	if err != nil {
 		log.Fatal("Error reading the repo's 'app.yaml', try running 'fox init': %v", err)
 	}
@@ -57,18 +62,19 @@ func New(cfg *config.Config) *repo {
 	}
 
 	return &repo{
-		cfg:     cfg,
-		app:     app,
-		path:    repoPath,
-		gitRepo: gitRepo,
-		k8s:     kubernetes.NewClient(cfg),
-		docker:  d,
+		cfg:      cfg,
+		app:      app,
+		rootPath: repoPath,
+		appPath:  appPath,
+		gitRepo:  gitRepo,
+		k8s:      kubernetes.NewClient(cfg),
+		docker:   d,
 	}
 }
 
-func ReadApp(repoPath string) (*App, error) {
-	log.Verbose("Reading app definition '%s'", filepath.Join(repoPath, "app.yaml"))
-	b, err := os.ReadFile(filepath.Join(repoPath, "app.yaml"))
+func ReadApp(path string) (*App, error) {
+	log.Verbose("Reading app definition '%s'", filepath.Join(path, "app.yaml"))
+	b, err := os.ReadFile(filepath.Join(path, "app.yaml"))
 	if err != nil {
 		return nil, err
 	}
@@ -82,8 +88,8 @@ func ReadApp(repoPath string) (*App, error) {
 	return app, nil
 }
 
-func WriteApp(repoPath string, app *App) {
-	appPath := filepath.Join(repoPath, "app.yaml")
+func WriteApp(path string, app *App) {
+	appPath := filepath.Join(path, "app.yaml")
 	b, err := yaml.Marshal(app)
 	if err != nil {
 		log.Fatal("Error marshaling app definition: %v", err)
@@ -157,33 +163,49 @@ func (r *repo) GetRefName() string {
 }
 
 func (r *repo) GetCompCommit(compDirName string) string {
-	return r.GetCommit(filepath.Join(ComponentsDirName, compDirName))
+	return r.GetCommit(r.ComponentRepoSubpath(compDirName))
 }
 
-func (r *repo) GetCommit(subPath string) string {
+func (r *repo) GetCommit(path string) string {
 	if !r.IsClean() {
 		log.Fatal("Error finding commit hash: uncommitted changes present")
 	}
 
-	path := filepath.Join(r.path, subPath)
+	subPath := utils.Subpath(path, r.rootPath)
 	iter, err := r.gitRepo.Log(&git.LogOptions{
 		PathFilter: func(c string) bool {
 			return strings.HasPrefix(c, subPath)
 		},
 	})
 	if err != nil {
-		log.Fatal("Error finding commit hash for path '%s': %v", path, err)
+		log.Fatal("Error finding commit hash for path '%s': %v", subPath, err)
 	}
 
 	commit, err := iter.Next()
 	if err != nil {
-		log.Fatal("Error finding commit hash for path '%s': %v", path, err)
+		log.Fatal("Error finding commit hash for path '%s': %v", subPath, err)
 	}
 	if commit == nil {
-		log.Fatal("Error finding commit hash for path '%s': no commits have been made", path)
+		log.Fatal("Error finding commit hash for path '%s': no commits have been made", subPath)
 	}
 
 	return commit.Hash.String()[0:7]
+}
+
+func (r *repo) ComponentsDir() string {
+	return filepath.Join(r.appPath, "components")
+}
+
+func (r *repo) ComponentDir(comp string) string {
+	return filepath.Join(r.ComponentsDir(), comp)
+}
+
+func (r *repo) ComponentRepoSubpath(comp string) string {
+	return utils.Subpath(r.ComponentDir(comp), r.rootPath)
+}
+
+func (r *repo) ComponentAppSubpath(comp string) string {
+	return utils.Subpath(r.ComponentDir(comp), r.appPath)
 }
 
 func (r *repo) IsClean() bool {
