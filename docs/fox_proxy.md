@@ -16,15 +16,16 @@ can still be overridden manually by setting the header or query param on the
 original request.
 
 Examples:
+
     # Port forward local port 8080 and wait if no brokers are available.
     fox proxy 8080 --wait 5m
 
     # Port forward local port 8080 and inject 'my-env' and 'my-dep' context.
     fox proxy 8080 --env my-env --deployment my-dep
     
-    http://127.0.0.1:8080/hello                 # uses my-env and my-deployment
-    http://127.0.0.1:8080/hello?kf-env=your-env # uses your-env and my-dep
-    http://127.0.0.1:8080/hello?kf-dep=your-dep # uses my-env and your-dep
+      http://127.0.0.1:8080/hello                 # uses my-env and my-deployment
+      http://127.0.0.1:8080/hello?kf-env=your-env # uses your-env and my-dep
+      http://127.0.0.1:8080/hello?kf-dep=your-dep # uses my-env and your-dep
 
 
 ```

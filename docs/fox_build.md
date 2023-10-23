@@ -12,6 +12,7 @@ that the build working directory is the root of the repository, not the
 component directory.
 
 Examples:
+
     # Build and push OCI image for my-component.
     fox build my-component --publish
 
