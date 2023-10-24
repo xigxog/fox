@@ -33,7 +33,7 @@ func init() {
 }
 
 func addCommonBuildFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&cfg.Flags.Kind, "kind", "k", "", "if provided the built image will be loaded into the Kind cluster")
+	cmd.Flags().StringVarP(&cfg.Flags.Kind, "kind", "k", "", "if provided the built image will be loaded into the kind cluster")
 	cmd.Flags().BoolVarP(&cfg.Flags.NoCache, "no-cache", "", false, "do not use cache when building image")
 	cmd.Flags().BoolVarP(&cfg.Flags.ForceBuild, "force", "", false, "force build even if component image exists")
 }

@@ -4,4 +4,4 @@ metadata:
   name: world
 spec:
   vars:
-    who: World
+    HELLO_WORLD_WHO: World

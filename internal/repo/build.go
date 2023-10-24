@@ -67,6 +67,7 @@ func (r *repo) Build(compDirName string) string {
 		log.Fatal("Error creating container tar: %v", err)
 	}
 	labels := map[string]string{
+		"com.xigxog.kubefox.app":  r.app.Name, // TODO replace with const from lib when released
 		kubefox.LabelOCIComponent: compName,
 		kubefox.LabelOCICreated:   time.Now().Format(time.RFC3339),
 		kubefox.LabelOCIRevision:  gitCommit,
@@ -168,10 +169,10 @@ func (r *repo) KindLoad(img string) {
 		return
 	}
 
-	log.Info("Loading component image '%s' into Kind cluster '%s'.", img, kind)
+	log.Info("Loading component image '%s' into kind cluster '%s'.", img, kind)
 	if found, err := r.DoesImageExists(img, true); !found {
 		if err != nil {
-			log.Fatal("Error loading component image into Kind: %v", err)
+			log.Fatal("Error loading component image into kind: %v", err)
 		}
 		log.Fatal("Component image does not exist, please build it first.")
 	}
@@ -179,7 +180,7 @@ func (r *repo) KindLoad(img string) {
 	cmd := exec.Command("kind", "load", "docker-image", "--name="+kind, img)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		log.Error("%s", strings.TrimSpace(string(out)))
-		log.Fatal("Error loading component image into Kind: %v", err)
+		log.Fatal("Error loading component image into kind: %v", err)
 	} else {
 		log.Verbose("%s", strings.TrimSpace(string(out)))
 	}

@@ -41,7 +41,7 @@ func runDeploy(cmd *cobra.Command, args []string) {
 	checkCommonDeployFlags(name)
 
 	r := repo.New(cfg)
-	d := r.Deploy(name)
+	d := r.Deploy(name, false)
 	// Makes output less cluttered.
 	d.ManagedFields = nil
 	log.Marshal(d)

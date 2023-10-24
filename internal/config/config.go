@@ -150,17 +150,17 @@ func (cfg *Config) Setup() {
 	log.Info("Please make sure your workstation has Docker installed (https://docs.docker.com/engine/install)")
 	log.Info("and that KubeFox is installed (https://docs.kubefox.io/install) on your Kubernetes cluster.")
 	log.InfoNewline()
-	log.Info("If you don't have a Kubernetes cluster you can run one locally with Kind (https://kind.sigs.k8s.io)")
+	log.Info("If you don't have a Kubernetes cluster you can run one locally with kind (https://kind.sigs.k8s.io)")
 	log.Info("to experiment with KubeFox.")
 	log.InfoNewline()
 	log.Info("🦊 Fox needs a place to store the component images it will build, normally this is")
 	log.Info("a remote container registry. However, if you only want to use KubeFox locally")
-	log.Info("with Kind you can skip this step.")
-	kindOnly := utils.YesNoPrompt("Are you only using KubeFox with local Kind cluster?", false)
+	log.Info("with kind you can skip this step.")
+	kindOnly := utils.YesNoPrompt("Are you only using KubeFox with local kind cluster?", false)
 	if kindOnly {
 		cfg.ContainerRegistry.Address = LocalRegistry
 		cfg.ContainerRegistry.Token = ""
-		cfg.Kind.ClusterName = utils.NamePrompt("Kind cluster", "kind", true)
+		cfg.Kind.ClusterName = utils.NamePrompt("kind cluster", "kind", true)
 		cfg.Kind.AlwaysLoad = true
 		log.InfoNewline()
 		cfg.done()

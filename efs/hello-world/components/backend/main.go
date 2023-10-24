@@ -4,12 +4,12 @@ import "github.com/xigxog/kubefox/libs/core/kit"
 
 func main() {
 	k := kit.New()
-	k.Default(sayHello)
+	k.Default(sayWho)
 	k.Start()
 }
 
-func sayHello(k kit.Kontext) error {
-	who := k.EnvDef("who", "World")
+func sayWho(k kit.Kontext) error {
+	who := k.EnvDef("HELLO_WORLD_WHO", "World")
 	k.Log().Infof("The who is '%s'!", who)
 
 	return k.Resp().SendStr(who)

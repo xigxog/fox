@@ -126,6 +126,8 @@ func InputPrompt(prompt, def string, required bool) string {
 		log.Printf(" (default '%s')", def)
 	} else if required {
 		log.Printf(" (required)")
+	} else {
+		log.Printf(" (optional)")
 	}
 	log.Printf(": ")
 

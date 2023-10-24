@@ -12,7 +12,7 @@ import (
 )
 
 func (r *repo) Release(name string) *v1alpha1.Release {
-	p, spec := r.prepareDeployment()
+	p, spec := r.prepareDeployment(false)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()

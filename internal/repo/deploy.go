@@ -13,8 +13,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (r *repo) Deploy(name string) *v1alpha1.Deployment {
-	p, spec := r.prepareDeployment()
+func (r *repo) Deploy(name string, skipImageCheck bool) *v1alpha1.Deployment {
+	p, spec := r.prepareDeployment(skipImageCheck)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -56,7 +56,7 @@ func (r *repo) Publish(deployName string) *v1alpha1.Deployment {
 	}
 
 	if !r.cfg.Flags.SkipDeploy && deployName != "" {
-		return r.Deploy(deployName)
+		return r.Deploy(deployName, true)
 	}
 	return nil
 }
@@ -93,7 +93,7 @@ func (r *repo) applyIPS(ctx context.Context, p *v1alpha1.Platform, spec *v1alpha
 // prepareDeployment pulls the Platform, generates the DeploymentSpec and
 // ensures all images exist. If there are any issues it will prompt the user to
 // correct them.
-func (r *repo) prepareDeployment() (*v1alpha1.Platform, *v1alpha1.DeploymentSpec) {
+func (r *repo) prepareDeployment(skipImageCheck bool) (*v1alpha1.Platform, *v1alpha1.DeploymentSpec) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
@@ -103,29 +103,31 @@ func (r *repo) prepareDeployment() (*v1alpha1.Platform, *v1alpha1.DeploymentSpec
 		log.Fatal("Error getting platform :%v", err)
 	}
 
-	allFound := true
-	for n, c := range spec.Components {
-		img := r.GetCompImage(n, c.Commit)
-		if found, _ := r.DoesImageExists(img, false); found {
-			log.Info("Component image '%s' exists.", img)
-			if r.cfg.IsRegistryLocal() {
-				r.KindLoad(img)
+	if !skipImageCheck {
+		allFound := true
+		for n, c := range spec.Components {
+			img := r.GetCompImage(n, c.Commit)
+			if found, _ := r.DoesImageExists(img, false); found {
+				log.Info("Component image '%s' exists.", img)
+				if r.cfg.IsRegistryLocal() {
+					r.KindLoad(img)
+				}
+			} else {
+				log.Warn("Component image '%s' does not exist.", img)
+				allFound = false
 			}
-		} else {
-			log.Warn("Component image '%s' does not exist.", img)
-			allFound = false
-		}
-		log.InfoNewline()
-	}
-
-	if !allFound {
-		log.Info("There are one or more missing component images. 🦊 Fox will need to build and")
-		log.Info("push them to the container registry before continuing with the operation.")
-		if utils.YesNoPrompt("Missing component images, would you like to publish them?", true) {
 			log.InfoNewline()
-			r.Publish("")
-		} else {
-			log.Fatal("There are one or more missing component images.")
+		}
+
+		if !allFound {
+			log.Info("There are one or more missing component images. 🦊 Fox will need to build and")
+			log.Info("push them to the container registry before continuing with the operation.")
+			if utils.YesNoPrompt("Missing component images, would you like to publish them?", true) {
+				log.InfoNewline()
+				r.Publish("")
+			} else {
+				log.Fatal("There are one or more missing component images.")
+			}
 		}
 	}
 

@@ -11,7 +11,7 @@ fox publish (deploy-name) [flags]
 ```
       --force              force build even if component image exists
   -h, --help               help for publish
-  -k, --kind string        if provided the built image will be loaded into the Kind cluster
+  -k, --kind string        if provided the built image will be loaded into the kind cluster
   -n, --namespace string   namespace of platform
       --no-cache           do not use cache when building image
   -p, --platform string    name of platform to utilize

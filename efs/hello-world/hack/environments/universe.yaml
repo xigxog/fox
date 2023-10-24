@@ -4,4 +4,4 @@ metadata:
   name: universe
 spec:
   vars:
-    who: Universe
+    HELLO_WORLD_WHO: Universe

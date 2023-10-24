@@ -26,7 +26,7 @@ fox build (component name) [flags]
 ```
       --force         force build even if component image exists
   -h, --help          help for build
-  -k, --kind string   if provided the built image will be loaded into the Kind cluster
+  -k, --kind string   if provided the built image will be loaded into the kind cluster
       --no-cache      do not use cache when building image
       --push          publish image to OCI image registry
 ```
