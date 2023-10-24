@@ -9,7 +9,7 @@ func main() {
 }
 
 func sayWho(k kit.Kontext) error {
-	who := k.EnvDef("HELLO_WORLD_WHO", "World")
+	who := k.EnvDef("who", "World")
 	k.Log().Infof("The who is '%s'!", who)
 
 	return k.Resp().SendStr(who)

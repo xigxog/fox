@@ -405,7 +405,7 @@ func (c *Client) PortForward(ctx context.Context, req *PortForwardRequest) (*Por
 
 	go func() {
 		if err := pfer.ForwardPorts(); err != nil {
-			log.Fatal("Error starting port forward: %v", err)
+			log.Fatal("Error with port forward: %v", err)
 		}
 	}()
 

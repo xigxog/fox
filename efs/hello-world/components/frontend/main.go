@@ -9,7 +9,7 @@ import (
 
 func main() {
 	k := kit.New()
-	k.Route("Path(`/hello`)", sayHello)
+	k.Route("Path(`/{{.Env.subPath}}/hello`)", sayHello)
 	k.Start()
 }
 

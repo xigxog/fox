@@ -4,4 +4,5 @@ metadata:
   name: world
 spec:
   vars:
-    HELLO_WORLD_WHO: World
+    subPath: small
+    who: World
