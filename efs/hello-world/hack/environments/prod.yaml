@@ -1,8 +1,8 @@
 apiVersion: kubefox.xigxog.io/v1alpha1
 kind: Environment
 metadata:
-  name: world
+  name: prod
 spec:
   vars:
-    subPath: small
-    who: World
+    subPath: prod
+    who: Universe
