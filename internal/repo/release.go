@@ -38,6 +38,8 @@ func (r *repo) Release(name string) *v1alpha1.Release {
 		},
 	}
 
+	// Hang on to typeMeta as it is erased by create.
+	t := rel.TypeMeta
 	err := r.k8s.Create(ctx, rel)
 	if errors.IsAlreadyExists(err) {
 		exRel := *rel
@@ -50,6 +52,8 @@ func (r *repo) Release(name string) *v1alpha1.Release {
 	if err != nil {
 		log.Fatal("%v", err)
 	}
+	// Restore typeMeta.
+	rel.TypeMeta = t
 
 	r.waitForReady(p, spec)
 
