@@ -4,9 +4,11 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"runtime/debug"
+	"strconv"
+
 	"github.com/spf13/cobra"
 	"github.com/xigxog/fox/internal/log"
-	"github.com/xigxog/kubefox/libs/core/kubefox"
 )
 
 var verCmd = &cobra.Command{
@@ -20,8 +22,30 @@ func init() {
 }
 
 func runVer(cmd *cobra.Command, args []string) {
+	var (
+		version, commit, date string
+		modified              bool = true
+	)
+	if info, ok := debug.ReadBuildInfo(); ok {
+		version = info.Main.Version
+		for _, s := range info.Settings {
+			switch s.Key {
+			case "vcs.revision":
+				commit = s.Value
+			case "vcs.time":
+				date = s.Value
+			case "vcs.modified":
+				modified, _ = strconv.ParseBool(s.Value)
+			}
+		}
+	}
+
+	if modified {
+		log.Warn("binary built from source with uncommitted changes")
+	}
 	log.Marshal(map[string]any{
-		"gitCommit": kubefox.GitCommit,
-		"gitRef":    kubefox.GitRef,
+		"version": version,
+		"commit":  commit,
+		"date":    date,
 	})
 }
