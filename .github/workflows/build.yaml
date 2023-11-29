@@ -23,4 +23,4 @@ jobs:
           cache-dependency-path: go.sum
 
       - name: Build binary
-        run: make
+        run: make build
