@@ -146,14 +146,14 @@ func (srv *ProxyServer) startPortForward(cfg *config.Config) *kubernetes.PortFor
 		Platform:  p.Name,
 	}
 	pf, err := c.PortForward(ctx, pfReq)
-	if errors.Is(err, kubernetes.ErrComponentNotRead) && cfg.Flags.WaitTime > 0 {
-		log.Warn("No broker pod is available.")
-		log.Info("Waiting for broker pod to become available...")
+	if errors.Is(err, kubernetes.ErrComponentNotReady) && cfg.Flags.WaitTime > 0 {
+		log.Warn("No httpsrv pod is available.")
+		log.Info("Waiting for httpsrv pod to become available...")
 
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Flags.WaitTime)
 		defer cancel()
 
-		err = c.WaitPodReady(ctx, p, "broker", "")
+		err = c.WaitPodReady(ctx, p, "httpsrv", "")
 		if err == nil {
 			pf, err = c.PortForward(ctx, pfReq)
 		}

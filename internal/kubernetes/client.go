@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	ErrComponentNotRead = fmt.Errorf("component not ready")
+	ErrComponentNotReady = fmt.Errorf("component not ready")
 )
 
 type Client struct {
@@ -40,11 +40,11 @@ type Client struct {
 }
 
 type PortForwardRequest struct {
-	Namespace  string
-	Platform   string
-	BrokerPod  string
-	BrokerPort int32
-	LocalPort  int32
+	Namespace   string
+	Platform    string
+	HTTPSrvPod  string
+	HTTPSrvPort int32
+	LocalPort   int32
 }
 
 type PortForward struct {
@@ -278,20 +278,20 @@ func (c *Client) WaitPodReady(ctx context.Context, p *v1alpha1.Platform, comp, c
 }
 
 func (c *Client) PortForward(ctx context.Context, req *PortForwardRequest) (*PortForward, error) {
-	if req.BrokerPod == "" {
+	if req.HTTPSrvPod == "" {
 		podList := &corev1.PodList{}
 		err := c.List(ctx, podList,
 			client.InNamespace(req.Namespace),
 			client.MatchingLabels{
 				api.LabelK8sPlatform:  req.Platform,
-				api.LabelK8sComponent: "broker",
+				api.LabelK8sComponent: "httpsrv",
 			},
 		)
 		if err != nil {
 			return nil, err
 		}
 		if len(podList.Items) == 0 {
-			return nil, fmt.Errorf("%w: no broker pods found", ErrComponentNotRead)
+			return nil, fmt.Errorf("%w: no httpsrv pods found", ErrComponentNotReady)
 		}
 
 		var name string
@@ -311,30 +311,30 @@ func (c *Client) PortForward(ctx context.Context, req *PortForwardRequest) (*Por
 			break
 		}
 		if name == "" {
-			return nil, fmt.Errorf("%w: no available broker pod", ErrComponentNotRead)
+			return nil, fmt.Errorf("%w: no available httpsrv pod", ErrComponentNotReady)
 		}
-		req.BrokerPod = podList.Items[0].Name
+		req.HTTPSrvPod = podList.Items[0].Name
 	}
-	if req.BrokerPort == 0 {
+	if req.HTTPSrvPort == 0 {
 		pod := &corev1.Pod{}
-		err := c.Get(ctx, client.ObjectKey{Namespace: req.Namespace, Name: req.BrokerPod}, pod)
+		err := c.Get(ctx, client.ObjectKey{Namespace: req.Namespace, Name: req.HTTPSrvPod}, pod)
 		if err != nil {
 			return nil, err
 		}
 		for _, c := range pod.Spec.Containers {
-			if c.Name != "broker" {
+			if c.Name != "httpsrv" {
 				continue
 			}
 			for _, p := range c.Ports {
 				if p.Name != "http" {
 					continue
 				}
-				req.BrokerPort = p.ContainerPort
+				req.HTTPSrvPort = p.ContainerPort
 				break
 			}
 		}
-		if req.BrokerPort == 0 {
-			req.BrokerPort = 8080
+		if req.HTTPSrvPort == 0 {
+			req.HTTPSrvPort = 8080
 		}
 	}
 	if req.LocalPort == 0 {
@@ -357,7 +357,7 @@ func (c *Client) PortForward(ctx context.Context, req *PortForwardRequest) (*Por
 
 	scheme := "https"
 	host := c.Client.RestConfig.Host
-	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", req.Namespace, req.BrokerPod)
+	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", req.Namespace, req.HTTPSrvPod)
 	if u, err := url.Parse(host); err == nil { // success
 		scheme = u.Scheme
 		host = u.Host
@@ -382,7 +382,7 @@ func (c *Client) PortForward(ctx context.Context, req *PortForwardRequest) (*Por
 	var buf bytes.Buffer
 	pfer, err := portforward.New(
 		dialer,
-		[]string{fmt.Sprintf("%d:%d", req.LocalPort, req.BrokerPort)},
+		[]string{fmt.Sprintf("%d:%d", req.LocalPort, req.HTTPSrvPort)},
 		pf.stopCh, pf.readyCh, &buf, &buf)
 	if err != nil {
 		return nil, err
@@ -398,7 +398,7 @@ func (c *Client) PortForward(ctx context.Context, req *PortForwardRequest) (*Por
 	// Wait for port forward to be ready.
 	<-pf.readyCh
 	log.Verbose("Port forward ready; pod: '%s', podPort: '%d', localPort: '%d'.",
-		req.BrokerPod, req.BrokerPort, req.LocalPort)
+		req.HTTPSrvPod, req.HTTPSrvPort, req.LocalPort)
 
 	return pf, nil
 }

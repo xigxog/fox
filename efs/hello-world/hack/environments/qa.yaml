@@ -1,8 +1,12 @@
 apiVersion: kubefox.xigxog.io/v1alpha1
-kind: Environment
+kind: VirtualEnv
 metadata:
   name: qa
 spec:
+  releasePolicy:
+    appDeploymentPolicy: VersionOptional
+    virtualEnvPolicy: SnapshotOptional
+data:
   vars:
-    subpath: qa
+    subPath: qa
     who: World

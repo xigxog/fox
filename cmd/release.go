@@ -42,7 +42,7 @@ func init() {
 
 func release(cmd *cobra.Command, args []string) {
 	appDep := args[0]
-	checkCommonDeployFlags(appDep)
+	checkCommonDeployFlags(cfg.Flags.VirtEnv)
 
 	rel := repo.New(cfg).Release(appDep)
 

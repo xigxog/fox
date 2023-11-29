@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/xigxog/fox/internal/log"
 	"github.com/xigxog/fox/internal/repo"
@@ -8,15 +10,16 @@ import (
 )
 
 var deployCmd = &cobra.Command{
-	Use:    "deploy (NAME)",
-	Args:   cobra.ExactArgs(1),
+	Use:    "deploy [NAME]",
+	Args:   cobra.MaximumNArgs(1),
 	PreRun: setup,
-	Run:    runDeploy,
-	Short:  "Deploy KubeFox App using the version from the currently checked out Git commit",
+	RunE:   runDeploy,
+	Short:  "Deploy KubeFox App using the component code from the currently checked out Git commit",
 	Long:   ``,
 }
 
 func init() {
+	deployCmd.Flags().StringVarP(&cfg.Flags.Version, "version", "s", "", "version to assign to the AppDeployment, making it immutable")
 	addCommonDeployFlags(deployCmd)
 	rootCmd.AddCommand(deployCmd)
 }
@@ -37,8 +40,17 @@ func checkCommonDeployFlags(name string) {
 	}
 }
 
-func runDeploy(cmd *cobra.Command, args []string) {
-	name := args[0]
+func runDeploy(cmd *cobra.Command, args []string) error {
+	if len(args) == 0 && cfg.Flags.Version == "" {
+		return fmt.Errorf("accepts 1 arg(s), received 0")
+	}
+
+	var name string
+	if len(args) == 0 {
+		name = utils.CleanName(cfg.Flags.Version)
+	} else {
+		name = args[0]
+	}
 	checkCommonDeployFlags(name)
 
 	d := repo.New(cfg).Deploy(name, false)
@@ -46,4 +58,6 @@ func runDeploy(cmd *cobra.Command, args []string) {
 	// Makes output less cluttered.
 	d.ManagedFields = nil
 	log.Marshal(d)
+
+	return nil
 }

@@ -161,6 +161,7 @@ func (r *repo) getDepSpecAndDetails() (*v1alpha1.AppDeploymentSpec, *v1alpha1.Ap
 	depSpec.App.Name = r.app.Name
 	depSpec.App.Commit = commit.Hash.String()
 	depSpec.App.CommitTime = metav1.NewTime(commit.Committer.When)
+	depSpec.Version = r.cfg.Flags.Version
 	depSpec.App.RepoURL = r.GetRepoURL()
 	depSpec.App.Branch = r.GetHeadRef()
 	depSpec.App.Tag = r.GetTagRef()

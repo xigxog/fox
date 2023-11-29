@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/xigxog/fox/internal/log"
 	"github.com/xigxog/fox/internal/repo"
+	"github.com/xigxog/kubefox/utils"
 )
 
 var publishCmd = &cobra.Command{
@@ -21,6 +22,7 @@ var (
 )
 
 func init() {
+	publishCmd.Flags().StringVarP(&cfg.Flags.Version, "version", "s", "", "version to assign to the AppDeployment, making it immutable")
 	publishCmd.Flags().BoolVarP(&skipPush, "skip-push", "", false, `do not push image after build`)
 	publishCmd.Flags().BoolVarP(&cfg.Flags.SkipDeploy, "skip-deploy", "", false, `do not perform deployment after build`)
 	addCommonBuildFlags(publishCmd)
@@ -36,13 +38,17 @@ func runPublish(cmd *cobra.Command, args []string) error {
 	} else {
 		cfg.Flags.PushImage = true
 	}
-	if !cfg.Flags.SkipDeploy && len(args) == 0 {
+	if len(args) == 0 && !cfg.Flags.SkipDeploy && cfg.Flags.Version == "" {
 		return fmt.Errorf("accepts 1 arg(s), received 0")
 	}
 
 	var name string
-	if !cfg.Flags.SkipDeploy {
+	if len(args) == 0 {
+		name = utils.CleanName(cfg.Flags.Version)
+	} else {
 		name = args[0]
+	}
+	if !cfg.Flags.SkipDeploy {
 		checkCommonDeployFlags(name)
 	}
 
