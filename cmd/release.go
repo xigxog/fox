@@ -7,41 +7,45 @@ import (
 )
 
 var releaseCmd = &cobra.Command{
-	Use:    "release (release name)",
+	Use:    "release (NAME | COMMIT | SHORT COMMIT | VERSION | TAG | BRANCH)",
 	Args:   cobra.ExactArgs(1),
 	PreRun: setup,
 	Run:    release,
-	Short:  "Release app using the version from the currently checked out Git commit",
+	Short:  "Release specified AppDeployment and VirtualEnvironment",
 	Long: `
-The release command will ensure all components are deployed and then activate 
-their routes. This causes genesis events matching component's routes to be 
-automatically sent to the component with the specified environment being 
+The release command activates the routes of the components belonging to the 
+specified AppDeployment. This causes genesis events matching components' routes
+to be automatically sent to the component with the specified environment being 
 injected.
 
 Examples:
 
-    # Create a release named 'staging' using the 'qa' environment.
-    fox release staging --env qa
+    # Release the AppDeployment named 'main' using the 'dev' Virtual Environment.
+    fox release main --virtual-env dev
+
+    # Release the AppDeployment with version 'v1.2.3' using the 'prod' 
+	# VirtualEnvironment, creating an VirtualEnvironmentSnapshot if needed.
+    fox release v1.2.3 --virtual-env prod --create-snapshot
 `,
 }
 
 func init() {
-	releaseCmd.Flags().StringVarP(&cfg.Flags.Env, "env", "e", "", "environment resource to release to (required)")
-	releaseCmd.Flags().StringVarP(&cfg.Flags.EnvUID, "env-uid", "", "", "environment resource UID to release to")
-	releaseCmd.Flags().StringVarP(&cfg.Flags.EnvVersion, "env-version", "", "", "environment resource version to release to")
-	addCommonBuildFlags(releaseCmd)
+	releaseCmd.Flags().StringVarP(&cfg.Flags.VirtEnv, "virtual-env", "e", "", "name of ClusterVirtualEnvironment, VirtualEnvironment, or VirtualEnvironmentSnapshot to use")
+	releaseCmd.Flags().BoolVarP(&cfg.Flags.CreateVirtEnv, "create-snapshot", "c", false, "create an immutable snapshot of environment and use for release")
+
 	addCommonDeployFlags(releaseCmd)
-	releaseCmd.MarkFlagRequired("env")
+
+	releaseCmd.MarkFlagRequired("virtual-env")
 
 	rootCmd.AddCommand(releaseCmd)
 }
 
 func release(cmd *cobra.Command, args []string) {
-	name := args[0]
-	checkCommonDeployFlags(name)
+	appDep := args[0]
+	checkCommonDeployFlags(appDep)
 
-	r := repo.New(cfg)
-	rel := r.Release(name)
+	rel := repo.New(cfg).Release(appDep)
+
 	// Makes output less cluttered.
 	rel.ManagedFields = nil
 	log.Marshal(rel)

@@ -4,23 +4,32 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/xigxog/kubefox/libs/core/kit"
+	"github.com/xigxog/kubefox/kit"
+	"github.com/xigxog/kubefox/kit/env"
+)
+
+var (
+	backend kit.Dependency
 )
 
 func main() {
 	k := kit.New()
-	k.Route("Path(`/{{.Env.subPath}}/hello`)", sayHello)
+
+	backend = k.Component("backend")
+	k.EnvVar("subpath", env.Unique())
+	k.Route("Path(`/{{.Env.subpath}}/hello`)", sayHello)
+
 	k.Start()
 }
 
 func sayHello(k kit.Kontext) error {
-	r, err := k.Component("backend").Send()
+	r, err := k.Req(backend).Send()
 	if err != nil {
 		return err
 	}
 
 	msg := fmt.Sprintf("👋 Hello %s!", r.Str())
-	k.Log().Info(msg)
+	k.Log().Debug(msg)
 
 	a := strings.ToLower(k.Header("accept"))
 	switch {

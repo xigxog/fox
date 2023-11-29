@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/xigxog/kubefox/libs/core/logkf"
+	"github.com/xigxog/kubefox/logkf"
 	"sigs.k8s.io/yaml"
 )
 

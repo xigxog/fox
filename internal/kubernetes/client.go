@@ -18,35 +18,23 @@ import (
 	"github.com/xigxog/fox/internal/config"
 	"github.com/xigxog/fox/internal/log"
 	"github.com/xigxog/fox/internal/utils"
-	"github.com/xigxog/kubefox/libs/api/kubernetes/v1alpha1"
-	"github.com/xigxog/kubefox/libs/core/kubefox"
+	"github.com/xigxog/kubefox/api"
+	"github.com/xigxog/kubefox/api/kubernetes/v1alpha1"
+	"github.com/xigxog/kubefox/k8s"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	kconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 var (
 	ErrComponentNotRead = fmt.Errorf("component not ready")
 )
 
-const (
-	FieldOwner client.FieldOwner = "fox"
-)
-
 type Client struct {
-	client.Client
-
-	KubeConfig *clientcmdapi.Config
-	RestConfig *rest.Config
+	*k8s.Client
 
 	cfg *config.Config
 }
@@ -68,50 +56,48 @@ type PortForward struct {
 }
 
 func NewClient(cfg *config.Config) *Client {
-	v1alpha1.SchemeBuilder.AddToScheme(scheme.Scheme)
-
-	l := clientcmd.NewDefaultClientConfigLoadingRules()
-	kubeConfig, err := l.Load()
+	cli, err := k8s.NewClient("fox")
 	if err != nil {
-		log.Fatal("Error reading Kubernetes config file: %v", err)
-	}
-
-	kCfg, err := kconfig.GetConfig()
-	if err != nil {
-		log.Fatal("Error reading Kubernetes config file: %v", err)
-	}
-	c, err := client.New(kCfg, client.Options{Scheme: scheme.Scheme})
-	if err != nil {
-		log.Fatal("Error setting up Kubernetes client: %v", err)
+		log.Fatal("Error creating Kubernetes client: %v", err)
 	}
 
 	return &Client{
-		Client:     c,
-		KubeConfig: kubeConfig,
-		RestConfig: kCfg,
-		cfg:        cfg,
+		Client: cli,
+		cfg:    cfg,
 	}
 }
 
-func (c *Client) Apply(ctx context.Context, obj client.Object) error {
-	return c.Patch(ctx, obj, client.Apply, FieldOwner, client.ForceOwnership)
+func (c *Client) Create(ctx context.Context, obj client.Object) error {
+	opts := []client.CreateOption{}
+	if c.cfg.Flags.DryRun {
+		opts = append(opts, client.DryRunAll)
+	}
+	return c.Client.Create(ctx, obj, opts...)
 }
 
-func (c *Client) Merge(ctx context.Context, obj client.Object) error {
-	return c.Patch(ctx, obj, client.Merge, FieldOwner)
+func (c *Client) Upsert(ctx context.Context, obj client.Object) error {
+	return c.Client.Upsert(ctx, obj, c.cfg.Flags.DryRun)
+}
+
+func (c *Client) Apply(ctx context.Context, obj client.Object) error {
+	opts := []client.PatchOption{}
+	if c.cfg.Flags.DryRun {
+		opts = append(opts, client.DryRunAll)
+	}
+	return c.Client.Apply(ctx, obj, opts...)
 }
 
 func (r *Client) ListPlatforms(ctx context.Context) ([]v1alpha1.Platform, error) {
 	pList := &v1alpha1.PlatformList{}
-	if err := r.List(ctx, pList); err != nil {
-		return nil, fmt.Errorf("unable to fetch platforms: %w", err)
+	if err := r.Client.List(ctx, pList); err != nil {
+		return nil, fmt.Errorf("unable to list KubeFox Platforms: %w", err)
 	}
 
 	return pList.Items, nil
 }
 
 func (c *Client) GetPlatform(ctx context.Context) (*v1alpha1.Platform, error) {
-	nn := types.NamespacedName{
+	nn := client.ObjectKey{
 		Namespace: c.cfg.Flags.Namespace,
 		Name:      c.cfg.Flags.Platform,
 	}
@@ -133,7 +119,7 @@ func (c *Client) GetPlatform(ctx context.Context) (*v1alpha1.Platform, error) {
 			if apierrors.IsNotFound(err) {
 				platform = c.pickPlatform()
 			} else {
-				log.Fatal("Unable to get KubeFox platform: %v", err)
+				log.Fatal("Unable to get KubeFox Platform: %v", err)
 			}
 		}
 	}
@@ -153,27 +139,27 @@ func (c *Client) pickPlatform() *v1alpha1.Platform {
 	switch len(pList) {
 	case 0:
 		if !c.cfg.Flags.Info {
-			context := c.KubeConfig.CurrentContext
-			cluster := c.KubeConfig.Contexts[context].Cluster
-			log.Warn("No KubeFox platforms found on the current cluster '%s'.", cluster)
+			context := c.Client.KubeConfig.CurrentContext
+			cluster := c.Client.KubeConfig.Contexts[context].Cluster
+			log.Warn("No KubeFox Platforms found on the current cluster '%s'.", cluster)
 		}
-		log.Info("You need to have a KubeFox platform instance running to deploy your components.")
+		log.Info("You need to have a KubeFox Platform instance running to deploy your components.")
 		log.Info("Don't worry, 🦊 Fox can create one for you.")
-		if utils.YesNoPrompt("Would you like to create a KubeFox platform?", true) {
+		if utils.YesNoPrompt("Would you like to create a KubeFox Platform?", true) {
 			return c.createPlatform()
 		} else {
-			log.Fatal("Error you must create a KubeFox platform before deploying components.")
+			log.Fatal("Error you must create a KubeFox Platform before deploying components.")
 		}
 	case 1:
 		return &pList[0]
 	}
 
 	for i, p := range pList {
-		log.Info("%d. %s/%s", i+1, p.Namespace, p.Name)
+		log.Printf("%d. %s/%s\n", i+1, p.Namespace, p.Name)
 	}
 
 	var input string
-	log.Printf("Select the KubeFox platform to use: ")
+	log.Printf("Select the KubeFox Platform to use: ")
 	fmt.Scanln(&input)
 	i, err := strconv.Atoi(input)
 	if err != nil {
@@ -186,7 +172,7 @@ func (c *Client) pickPlatform() *v1alpha1.Platform {
 
 	p := &pList[i]
 	if len(pList) > 1 {
-		if utils.YesNoPrompt("Remember selected KubeFox platform?", true) {
+		if utils.YesNoPrompt("Remember selected KubeFox Platform?", true) {
 			c.cfg.KubeFox.Namespace = p.Namespace
 			c.cfg.KubeFox.Platform = p.Name
 			c.cfg.Write()
@@ -198,8 +184,8 @@ func (c *Client) pickPlatform() *v1alpha1.Platform {
 }
 
 func (c *Client) createPlatform() *v1alpha1.Platform {
-	name := utils.NamePrompt("KubeFox platform", "", true)
-	namespace := utils.InputPrompt("Enter the Kubernetes namespace of the KubeFox platform",
+	name := utils.NamePrompt("KubeFox Platform", "", true)
+	namespace := utils.InputPrompt("Enter the Kubernetes namespace of the KubeFox Platform",
 		fmt.Sprintf("kubefox-%s", name), true)
 	log.InfoNewline()
 
@@ -236,8 +222,8 @@ func (c *Client) createPlatform() *v1alpha1.Platform {
 	return p
 }
 
-func (c *Client) WaitPlatformReady(ctx context.Context, p *v1alpha1.Platform, spec *v1alpha1.DeploymentSpec) {
-	log.Info("Waiting for KubeFox platform '%s' to be ready...", p.Name)
+func (c *Client) WaitPlatformReady(ctx context.Context, p *v1alpha1.Platform, spec *v1alpha1.AppDeploymentSpec) {
+	log.Info("Waiting for KubeFox Platform '%s' to be ready...", p.Name)
 	if err := c.WaitPodReady(ctx, p, "nats", ""); err != nil {
 		log.Fatal("Error while waiting: %v", err)
 	}
@@ -258,11 +244,11 @@ func (c *Client) WaitPodReady(ctx context.Context, p *v1alpha1.Platform, comp, c
 	log.Verbose("Waiting for component '%s' with commit '%s' to be ready...", comp, commit)
 
 	hasLabels := client.MatchingLabels{
-		kubefox.LabelK8sComponent: comp,
-		kubefox.LabelK8sPlatform:  p.Name,
+		api.LabelK8sComponent: comp,
+		api.LabelK8sPlatform:  p.Name,
 	}
 	if commit != "" {
-		hasLabels[kubefox.LabelK8sComponentCommit] = commit
+		hasLabels[api.LabelK8sComponentCommit] = commit
 	}
 
 	l := &corev1.PodList{}
@@ -297,8 +283,8 @@ func (c *Client) PortForward(ctx context.Context, req *PortForwardRequest) (*Por
 		err := c.List(ctx, podList,
 			client.InNamespace(req.Namespace),
 			client.MatchingLabels{
-				kubefox.LabelK8sPlatform:  req.Platform,
-				kubefox.LabelK8sComponent: "broker",
+				api.LabelK8sPlatform:  req.Platform,
+				api.LabelK8sComponent: "broker",
 			},
 		)
 		if err != nil {
@@ -331,7 +317,7 @@ func (c *Client) PortForward(ctx context.Context, req *PortForwardRequest) (*Por
 	}
 	if req.BrokerPort == 0 {
 		pod := &corev1.Pod{}
-		err := c.Get(ctx, types.NamespacedName{Namespace: req.Namespace, Name: req.BrokerPod}, pod)
+		err := c.Get(ctx, client.ObjectKey{Namespace: req.Namespace, Name: req.BrokerPod}, pod)
 		if err != nil {
 			return nil, err
 		}
@@ -370,7 +356,7 @@ func (c *Client) PortForward(ctx context.Context, req *PortForwardRequest) (*Por
 	}
 
 	scheme := "https"
-	host := c.RestConfig.Host
+	host := c.Client.RestConfig.Host
 	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", req.Namespace, req.BrokerPod)
 	if u, err := url.Parse(host); err == nil { // success
 		scheme = u.Scheme
@@ -378,7 +364,7 @@ func (c *Client) PortForward(ctx context.Context, req *PortForwardRequest) (*Por
 		path = fmt.Sprintf("%s%s", u.Path, path)
 	}
 
-	transport, upgrader, err := spdy.RoundTripperFor(c.RestConfig)
+	transport, upgrader, err := spdy.RoundTripperFor(c.Client.RestConfig)
 	if err != nil {
 		return nil, err
 	}

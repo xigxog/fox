@@ -22,8 +22,8 @@ import (
 	"github.com/moby/patternmatcher/ignorefile"
 	"github.com/xigxog/fox/efs"
 	"github.com/xigxog/fox/internal/log"
-	"github.com/xigxog/fox/internal/utils"
-	"github.com/xigxog/kubefox/libs/core/kubefox"
+	"github.com/xigxog/kubefox/api"
+	"github.com/xigxog/kubefox/utils"
 )
 
 const (
@@ -39,10 +39,24 @@ type DockerfileTar struct {
 func (r *repo) Build(compDirName string) string {
 	img := r.GetCompImageFromDir(compDirName)
 	compDir := r.ComponentAppSubpath(compDirName)
-	compName := utils.Clean(compDirName)
-	gitCommit := r.GetCompCommit(compDirName)
-	gitRef := r.GetRefName()
+	compName := utils.CleanName(compDirName)
+	compCommit := r.GetCompCommit(compDirName).Hash.String()
+	rootCommit := r.GetRootCommit()
+	headRef := r.GetHeadRef()
+	tagRef := r.GetTagRef()
 	regAuth := r.GetRegAuth()
+	now := time.Now().Format(time.RFC3339)
+
+	buildArgs := map[string]*string{
+		"BUILD_DATE":       &now,
+		"COMPONENT":        &compName,
+		"COMPONENT_DIR":    &compDir,
+		"COMPONENT_COMMIT": &compCommit,
+		"ROOT_COMMIT":      &rootCommit,
+		"HEAD_REF":         &headRef,
+		"TAG_REF":          &tagRef,
+	}
+	log.VerboseMarshal(buildArgs, "Docker build args:")
 
 	if !(r.cfg.Flags.ForceBuild || r.cfg.Flags.NoCache) {
 		if found, _ := r.DoesImageExists(img, false); found {
@@ -67,25 +81,23 @@ func (r *repo) Build(compDirName string) string {
 		log.Fatal("Error creating container tar: %v", err)
 	}
 	labels := map[string]string{
-		"com.xigxog.kubefox.app":  r.app.Name, // TODO replace with const from lib when released
-		kubefox.LabelOCIComponent: compName,
-		kubefox.LabelOCICreated:   time.Now().Format(time.RFC3339),
-		kubefox.LabelOCIRevision:  gitCommit,
-		kubefox.LabelOCISource:    r.GetRepoURL(),
+		api.LabelOCIApp:       r.app.Name,
+		api.LabelOCIComponent: compName,
+		api.LabelOCICreated:   now,
+		api.LabelOCIRevision:  compCommit,
+		api.LabelOCISource:    r.GetRepoURL(),
 	}
 
-	buildResp, err := r.docker.ImageBuild(context.Background(), dfi, types.ImageBuildOptions{
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
+	defer cancel()
+
+	buildResp, err := r.docker.ImageBuild(ctx, dfi, types.ImageBuildOptions{
 		Dockerfile: injectedDockerfile,
 		NoCache:    r.cfg.Flags.NoCache,
 		Remove:     true,
 		Tags:       []string{img},
 		Labels:     labels,
-		BuildArgs: map[string]*string{
-			"COMPONENT":     &compName,
-			"COMPONENT_DIR": &compDir,
-			"GIT_COMMIT":    &gitCommit,
-			"GIT_REF":       &gitRef,
-		},
+		BuildArgs:  buildArgs,
 	})
 	if err != nil {
 		log.Fatal("Error building container image: %v", err)
@@ -98,7 +110,7 @@ func (r *repo) Build(compDirName string) string {
 	if r.cfg.Flags.PushImage && !r.cfg.IsRegistryLocal() {
 		log.Info("Pushing component image '%s'.", img)
 
-		pushResp, err := r.docker.ImagePush(context.Background(), img, types.ImagePushOptions{
+		pushResp, err := r.docker.ImagePush(ctx, img, types.ImagePushOptions{
 			RegistryAuth: regAuth,
 		})
 		if err != nil {

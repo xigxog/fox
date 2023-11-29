@@ -18,7 +18,8 @@ import (
 	"github.com/xigxog/fox/efs"
 	"github.com/xigxog/fox/internal/config"
 	"github.com/xigxog/fox/internal/log"
-	"github.com/xigxog/fox/internal/utils"
+	foxutils "github.com/xigxog/fox/internal/utils"
+	"github.com/xigxog/kubefox/utils"
 )
 
 func Init(cfg *config.Config) {
@@ -29,36 +30,36 @@ func Init(cfg *config.Config) {
 
 	app, err := ReadApp(appPath)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		log.Error("An KubeFox app definition already exists but appears to be invalid: %v.", err)
-		if !utils.YesNoPrompt("Would you like to reinitialize the app?", true) {
+		log.Error("An KubeFox App definition already exists but appears to be invalid: %v.", err)
+		if !foxutils.YesNoPrompt("Would you like to reinitialize the app?", true) {
 			return
 		}
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		log.VerboseMarshal(app, "App definition:")
-		log.Info("A valid KubeFox app definition already exists.")
+		log.Info("A valid KubeFox App definition already exists.")
 		initGit(repoPath, app, cfg)
 		return
 	}
 
 	app = &App{}
-	log.Info("Let's initialize a KubeFox app!")
+	log.Info("Let's initialize a KubeFox App!")
 	log.InfoNewline()
-	log.Info("To get things started quickly 🦊 Fox can create a 'hello-world' KubeFox app which")
+	log.Info("To get things started quickly 🦊 Fox can create a 'hello-world' KubeFox App which")
 	log.Info("includes two components and example environments for testing.")
-	if utils.YesNoPrompt("Would you like to initialize the 'hello-world' KubeFox app?", false) {
+	if foxutils.YesNoPrompt("Would you like to initialize the 'hello-world' KubeFox App?", false) {
 		initDir(efs.HelloWorldPath, appPath)
 		initGit(repoPath, app, cfg)
 		return
 	}
 	log.InfoNewline()
-	log.Info("🦊 Fox needs to create an KubeFox app definition. The definition is stored in the")
+	log.Info("🦊 Fox needs to create an KubeFox App definition. The definition is stored in the")
 	log.Info("'app.yaml' file in the root of the repo. The first thing it needs is a name for")
 	log.Info("the app. The name is used as part of Kubernetes resource names so it must")
 	log.Info("contain only lowercase alpha-numeric characters and dashes. But don't worry you")
 	log.Info("can enter a more human friendly title and description.")
-	app.Name = utils.NamePrompt("KubeFox app", utils.Clean(appPath), true)
-	app.Title = utils.InputPrompt("Enter the KubeFox app's title", "", false)
-	app.Description = utils.InputPrompt("Enter the KubeFox app's description", "", false)
+	app.Name = foxutils.NamePrompt("KubeFox App", utils.CleanName(appPath), true)
+	app.Title = foxutils.InputPrompt("Enter the KubeFox App's title", "", false)
+	app.Description = foxutils.InputPrompt("Enter the KubeFox App's description", "", false)
 
 	WriteApp(appPath, app)
 	initGit(repoPath, app, cfg)
@@ -75,7 +76,7 @@ func initGit(repoPath string, app *App, cfg *config.Config) {
 	}
 
 	r := New(cfg)
-	utils.EnsureDir(r.ComponentsDir())
+	foxutils.EnsureDir(r.ComponentsDir())
 
 	if !alreadyExists {
 		var remoteURL string
@@ -83,7 +84,7 @@ func initGit(repoPath string, app *App, cfg *config.Config) {
 			remoteURL = fmt.Sprintf("https://github.com/%s/%s.git", cfg.GitHub.Org.Name, filepath.Base(repoPath))
 		}
 
-		remoteURL = utils.InputPrompt("Enter URL for remote Git repo", remoteURL, false)
+		remoteURL = foxutils.InputPrompt("Enter URL for remote Git repo", remoteURL, false)
 		if remoteURL != "" {
 			_, err := nr.CreateRemote(&gitcfg.RemoteConfig{
 				Name: "origin",
@@ -98,13 +99,13 @@ func initGit(repoPath string, app *App, cfg *config.Config) {
 	}
 
 	log.InfoNewline()
-	log.Info("KubeFox app initialization complete!")
+	log.Info("KubeFox App initialization complete!")
 }
 
 func initDir(in, out string) {
 	log.Verbose("Writing files from EFS '%s' to '%s", in, out)
 
-	utils.EnsureDir(out)
+	foxutils.EnsureDir(out)
 	fs.WalkDir(efs.EFS, in,
 		func(efsPath string, d fs.DirEntry, err error) error {
 			if err != nil {
@@ -120,8 +121,8 @@ func initDir(in, out string) {
 			path = filepath.Join(out, path)
 
 			log.Verbose("Writing file '%s'", path)
-			utils.EnsureDirForFile(path)
-			if utils.FileExists(path) {
+			foxutils.EnsureDirForFile(path)
+			if foxutils.FileExists(path) {
 				log.Verbose("File '%s' exists, skipping...", path)
 				return nil
 			}

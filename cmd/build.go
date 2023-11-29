@@ -6,10 +6,10 @@ import (
 )
 
 var buildCmd = &cobra.Command{
-	Use:    "build (component name)",
+	Use:    "build (NAME)",
 	Args:   cobra.ExactArgs(1),
 	PreRun: setup,
-	Run:    build,
+	Run:    runBuild,
 	Short:  "Build and optionally push an OCI image of component",
 	Long: `
 The build command will use Docker to build the specified component. By default
@@ -38,7 +38,7 @@ func addCommonBuildFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVarP(&cfg.Flags.ForceBuild, "force", "", false, "force build even if component image exists")
 }
 
-func build(cmd *cobra.Command, args []string) {
+func runBuild(cmd *cobra.Command, args []string) {
 	r := repo.New(cfg)
 	r.Build(args[0])
 }

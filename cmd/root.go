@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/xigxog/fox/internal/config"
 	"github.com/xigxog/fox/internal/log"
-	"github.com/xigxog/kubefox/libs/core/kubefox"
+	"github.com/xigxog/kubefox/build"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -23,13 +23,13 @@ var rootCmd = &cobra.Command{
 	Short:            "CLI for interacting with KubeFox",
 	Long: `
 🦊 Fox is a CLI for interacting with KubeFox. You can use it to build, deploy, 
-and release your KubeFox apps.
+and release your KubeFox Apps.
 `,
 }
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.RepoPath, "repo", "r", "", "path to directory containing Git repository")
-	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.AppPath, "app", "a", "", "path to directory containing KubeFox app")
+	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.AppPath, "app", "a", "", "path to directory containing KubeFox App")
 	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.OutFormat, "output", "o", "yaml", `output format, one of ["json", "yaml"]`)
 	rootCmd.PersistentFlags().BoolVarP(&cfg.Flags.Info, "info", "i", false, "enable info output")
 	rootCmd.PersistentFlags().BoolVarP(&cfg.Flags.Verbose, "verbose", "v", false, "enable verbose output")
@@ -68,7 +68,7 @@ func setup(cmd *cobra.Command, args []string) {
 		log.InfoNewline()
 	}
 
-	log.Verbose("gitCommit: %s, gitRef: %s", kubefox.GitCommit, kubefox.GitRef)
+	log.VerboseMarshal(build.Info, "")
 }
 
 func getOutFormat() string {

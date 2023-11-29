@@ -1,0 +1,6 @@
+FROM alpine
+ARG COMPONENT
+
+COPY ./bin/fox /fox
+
+ENTRYPOINT [ "/fox" ]

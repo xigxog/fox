@@ -1,25 +1,31 @@
 ## Build time
 FROM golang:1.21 as builder
 
+ARG BUILD_DATE
 ARG COMPONENT_DIR
 ARG COMPONENT
-ARG GIT_COMMIT
-ARG GIT_REF
+ARG COMPONENT_COMMIT
+ARG ROOT_COMMIT
+ARG HEAD_REF
+ARG TAG_REF
 
 WORKDIR /app
 
 # Cache dependencies.
-COPY $COMPONENT_DIR/go.mod $COMPONENT_DIR/go.sum $COMPONENT_DIR/
-RUN cd "$COMPONENT_DIR/" && go mod download
+COPY app.yaml go.mo[d] go.su[m] ./
+RUN go mod download || true
 
 COPY ./ ./
 RUN CGO_ENABLED=0 go build \
     -C "$COMPONENT_DIR" \
     -o /component \
     -ldflags " \
-    -X github.com/xigxog/kubefox/libs/core/kubefox.ComponentName=$COMPONENT \
-    -X github.com/xigxog/kubefox/libs/core/kubefox.GitCommit=$GIT_COMMIT \
-    -X github.com/xigxog/kubefox/libs/core/kubefox.GitRef=$GIT_REF"
+    -X github.com/xigxog/kubefox/build.date=${BUILD_DATE}\
+    -X github.com/xigxog/kubefox/build.component=${COMPONENT} \
+    -X github.com/xigxog/kubefox/build.commit=${COMPONENT_COMMIT} \
+    -X github.com/xigxog/kubefox/build.rootCommit=${ROOT_COMMIT} \
+    -X github.com/xigxog/kubefox/build.headRef=${HEAD_REF} \
+    -X github.com/xigxog/kubefox/build.tagRef=${TAG_REF}"
 
 ## Runtime
 FROM ghcr.io/xigxog/base

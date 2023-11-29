@@ -4,5 +4,5 @@ metadata:
   name: qa
 spec:
   vars:
-    subPath: qa
+    subpath: qa
     who: World

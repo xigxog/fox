@@ -6,8 +6,8 @@ on:
       - "v*.*.*"
 
 jobs:
-  release-tag:
-    name: Release tag
+  release-binaries:
+    name: Release binaries
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -29,3 +29,36 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: release/*
+
+  release-image:
+    name: Release OCI image
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      CONTAINER_REGISTRY: ghcr.io/${{ github.repository_owner }}
+      REGISTRY_USERNAME: ${{ github.actor }}
+      REGISTRY_PASSWORD: ${{ github.token }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Log in to ghcr.io
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: ${{ env.CONTAINER_REGISTRY }}
+          username: ${{ env.REGISTRY_USERNAME }}
+          password: ${{ env.REGISTRY_PASSWORD }}
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Build and push image
+        run: make image COMPRESS=true PUSH=true

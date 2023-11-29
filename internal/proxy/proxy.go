@@ -16,7 +16,8 @@ import (
 	"github.com/xigxog/fox/internal/config"
 	"github.com/xigxog/fox/internal/kubernetes"
 	"github.com/xigxog/fox/internal/log"
-	"github.com/xigxog/kubefox/libs/core/kubefox"
+	"github.com/xigxog/kubefox/api"
+	kubefox "github.com/xigxog/kubefox/core"
 )
 
 type ProxyServer struct {
@@ -80,13 +81,13 @@ func (srv *ProxyServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	req.URL.Scheme = "http"
 	req.RequestURI = ""
 
-	env := kubefox.GetParamOrHeader(req, kubefox.HeaderEnv, kubefox.HeaderAbbrvEnv, kubefox.HeaderShortEnv)
-	if env == "" && srv.cfg.Flags.Env != "" {
-		req.Header.Set(kubefox.HeaderEnv, srv.cfg.Flags.Env)
+	env := kubefox.GetParamOrHeader(req, api.HeaderEnv, api.HeaderAbbrvEnv, api.HeaderShortEnv)
+	if env == "" && srv.cfg.Flags.VirtEnv != "" {
+		req.Header.Set(api.HeaderEnv, srv.cfg.Flags.VirtEnv)
 	}
-	dep := kubefox.GetParamOrHeader(req, kubefox.HeaderDep, kubefox.HeaderAbbrvDep, kubefox.HeaderShortDep)
-	if dep == "" && srv.cfg.Flags.Deployment != "" {
-		req.Header.Set(kubefox.HeaderDep, srv.cfg.Flags.Deployment)
+	dep := kubefox.GetParamOrHeader(req, api.HeaderDep, api.HeaderAbbrvDep, api.HeaderShortDep)
+	if dep == "" && srv.cfg.Flags.AppDeployment != "" {
+		req.Header.Set(api.HeaderDep, srv.cfg.Flags.AppDeployment)
 	}
 
 	reqData, _ := httputil.DumpRequest(req, false)
@@ -137,7 +138,7 @@ func (srv *ProxyServer) startPortForward(cfg *config.Config) *kubernetes.PortFor
 
 	p, err := c.GetPlatform(ctx)
 	if err != nil {
-		log.Fatal("Error getting platform :%v", err)
+		log.Fatal("Error getting KubeFox Platform :%v", err)
 	}
 
 	pfReq := &kubernetes.PortForwardRequest{

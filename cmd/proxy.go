@@ -9,7 +9,7 @@ import (
 )
 
 var proxyCmd = &cobra.Command{
-	Use:    "proxy (local port)",
+	Use:    "proxy (PORT)",
 	Args:   cobra.ExactArgs(1),
 	PreRun: setup,
 	Run:    runProxy,
@@ -40,8 +40,8 @@ Examples:
 }
 
 func init() {
-	proxyCmd.Flags().StringVarP(&cfg.Flags.Env, "env", "e", "", "environment to add to proxied requests")
-	proxyCmd.Flags().StringVarP(&cfg.Flags.Deployment, "deployment", "d", "", "deployment to add to proxied requests")
+	proxyCmd.Flags().StringVarP(&cfg.Flags.VirtEnv, "virtual-env", "e", "", "environment to add to proxied requests")
+	proxyCmd.Flags().StringVarP(&cfg.Flags.AppDeployment, "app-deployment", "d", "", "deployment to add to proxied requests")
 
 	addCommonDeployFlags(proxyCmd)
 	rootCmd.AddCommand(proxyCmd)

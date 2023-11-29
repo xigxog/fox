@@ -7,13 +7,11 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/xigxog/fox/internal/log"
+	"github.com/xigxog/kubefox/utils"
 )
-
-var specChars = regexp.MustCompile(`[^a-z0-9]`)
 
 func Wd() string {
 	wd, err := os.Getwd()
@@ -79,24 +77,6 @@ func IsDirEmpty(name string) bool {
 	return err == io.EOF
 }
 
-func CheckAllEmpty(strs ...string) bool {
-	for _, s := range strs {
-		if s != "" {
-			return false
-		}
-	}
-
-	return true
-}
-
-func Clean(path string) string {
-	b := filepath.Base(path)
-	b = strings.ToLower(b)
-	b = specChars.ReplaceAllString(b, "-")
-	b = strings.TrimPrefix(strings.TrimSuffix(b, "-"), "-")
-	return b
-}
-
 func YesNoPrompt(prompt string, def bool) bool {
 	if def {
 		log.Printf(prompt + " [Y/n] ")
@@ -144,10 +124,10 @@ func InputPrompt(prompt, def string, required bool) string {
 
 func NamePrompt(what, def string, required bool) string {
 	name := InputPrompt(fmt.Sprintf("Enter the %s's name", what), def, required)
-	if name != Clean(name) {
+	if !utils.IsValidName(name) {
 		log.Error("The %s's name is invalid.", what)
-		if YesNoPrompt(fmt.Sprintf("Would you like to use '%s' instead", Clean(name)), true) {
-			return Clean(name)
+		if YesNoPrompt(fmt.Sprintf("Would you like to use '%s' instead", utils.CleanName(name)), true) {
+			return utils.CleanName(name)
 		} else {
 			return NamePrompt(what, def, required)
 		}

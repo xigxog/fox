@@ -1,29 +1,29 @@
-BUILD_DIR = bin
-REL_DIR = release
-
-
-.PHONY: all
-all: clean build
+REPO_ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 .PHONY: build
 build:
-	go build -o $(BUILD_DIR)/fox .
+	$(REPO_ROOT)hack/scripts/build.sh
+
+.PHONY: release
+release:
+	$(REPO_ROOT)hack/scripts/release.sh
+
+.PHONY: package
+package:
+	$(REPO_ROOT)hack/scripts/package.sh
+
+.PHONY: image
+image:
+	$(REPO_ROOT)hack/scripts/image.sh
 
 .PHONY: docs
 docs:
-	go run main.go docs
-
-.PHONY: release
-release: clean
-	./build.sh darwin $(BUILD_DIR) $(REL_DIR)
-	./build.sh linux $(BUILD_DIR) $(REL_DIR)
-	./build.sh windows $(BUILD_DIR) $(REL_DIR)
+	$(REPO_ROOT)hack/scripts/docs.sh
 
 .PHONY: clean
 clean:
-	go clean
-	rm -rf ${BUILD_DIR} ${REL_DIR}
+	$(REPO_ROOT)hack/scripts/clean.sh
 
-.PHONY: fmt
-fmt:
-	go fmt ./...
+.PHONY: commit
+commit:
+	$(REPO_ROOT)hack/scripts/commit.sh

@@ -9,11 +9,11 @@ import (
 )
 
 var publishCmd = &cobra.Command{
-	Use:    "publish (deploy-name)",
+	Use:    "publish [NAME]",
 	Args:   cobra.MaximumNArgs(1),
 	PreRun: setup,
 	RunE:   runPublish,
-	Short:  "Builds, pushes, and deploys KubeFox apps using the version of the currently checked out Git commit",
+	Short:  "Builds, pushes, and deploys KubeFox Apps using the version of the currently checked out Git commit",
 }
 
 var (

@@ -9,10 +9,12 @@ import (
 	docker "github.com/docker/docker/client"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/xigxog/fox/internal/config"
 	"github.com/xigxog/fox/internal/kubernetes"
 	"github.com/xigxog/fox/internal/log"
-	"github.com/xigxog/fox/internal/utils"
+	foxutils "github.com/xigxog/fox/internal/utils"
+	"github.com/xigxog/kubefox/utils"
 	"gopkg.in/yaml.v2"
 )
 
@@ -82,7 +84,7 @@ func ReadApp(path string) (*App, error) {
 	if err := yaml.Unmarshal(b, app); err != nil {
 		return nil, err
 	}
-	if app.Name == "" || app.Name != utils.Clean(app.Name) {
+	if app.Name == "" || !utils.IsValidName(app.Name) {
 		return nil, fmt.Errorf("invalid app name")
 	}
 	return app, nil
@@ -94,7 +96,7 @@ func WriteApp(path string, app *App) {
 	if err != nil {
 		log.Fatal("Error marshaling app definition: %v", err)
 	}
-	utils.EnsureDirForFile(appPath)
+	foxutils.EnsureDirForFile(appPath)
 	if err := os.WriteFile(appPath, b, 0644); err != nil {
 		log.Fatal("Error writing app definition file: %v", err)
 	}
@@ -117,10 +119,23 @@ func (r *repo) CommitAll(msg string) string {
 	return hash.String()
 }
 
+func (r *repo) CreateTag(tag string) *plumbing.Reference {
+	log.Info("Creating tag '%s'.", tag)
+	h, err := r.gitRepo.Head()
+	if err != nil {
+		log.Fatal("Error opening head ref of git repo: %v", err)
+	}
+	ref, err := r.gitRepo.CreateTag(tag, h.Hash(), nil)
+	if err != nil {
+		log.Fatal("Error creating tag '%s': %v", tag, err)
+	}
+	return ref
+}
+
 func (r *repo) GetCompImageFromDir(compDirName string) string {
-	name := utils.Clean(compDirName)
+	name := utils.CleanName(compDirName)
 	commit := r.GetCompCommit(compDirName)
-	return r.GetCompImage(name, commit)
+	return r.GetCompImage(name, commit.Hash.String())
 }
 
 func (r *repo) GetCompImage(name, commit string) string {
@@ -136,16 +151,23 @@ func (r *repo) GetRepoURL() string {
 	return o.Config().URLs[0]
 }
 
-func (r *repo) GetRefName() string {
+func (r *repo) GetHeadRef() string {
 	gitRef, err := r.gitRepo.Head()
 	if err != nil {
 		log.Fatal("Error opening head ref of git repo: %v", err)
 	}
-
 	if gitRef.Name().IsBranch() {
 		return gitRef.Name().String()
 	}
 
+	return ""
+}
+
+func (r *repo) GetTagRef() string {
+	gitRef, err := r.gitRepo.Head()
+	if err != nil {
+		log.Fatal("Error opening head ref of git repo: %v", err)
+	}
 	// find tag
 	var refName string
 	tags, err := r.gitRepo.Tags()
@@ -162,16 +184,27 @@ func (r *repo) GetRefName() string {
 	return refName
 }
 
-func (r *repo) GetCompCommit(compDirName string) string {
+func (r *repo) GetCompCommit(compDirName string) *object.Commit {
 	return r.GetCommit(r.ComponentRepoSubpath(compDirName))
 }
 
-func (r *repo) GetCommit(path string) string {
+func (r *repo) GetRootCommit() string {
+	if !r.IsClean() {
+		log.Fatal("Error finding commit hash: uncommitted changes present")
+	}
+	head, err := r.gitRepo.Head()
+	if err != nil {
+		log.Fatal("Error opening head ref of git repo: %v", err)
+	}
+	return head.Hash().String()
+}
+
+func (r *repo) GetCommit(path string) *object.Commit {
 	if !r.IsClean() {
 		log.Fatal("Error finding commit hash: uncommitted changes present")
 	}
 
-	subPath := utils.Subpath(path, r.rootPath)
+	subPath := foxutils.Subpath(path, r.rootPath)
 	iter, err := r.gitRepo.Log(&git.LogOptions{
 		PathFilter: func(c string) bool {
 			return strings.HasPrefix(c, subPath)
@@ -189,7 +222,7 @@ func (r *repo) GetCommit(path string) string {
 		log.Fatal("Error finding commit hash for path '%s': no commits have been made", subPath)
 	}
 
-	return commit.Hash.String()[0:7]
+	return commit
 }
 
 func (r *repo) ComponentsDir() string {
@@ -201,11 +234,11 @@ func (r *repo) ComponentDir(comp string) string {
 }
 
 func (r *repo) ComponentRepoSubpath(comp string) string {
-	return utils.Subpath(r.ComponentDir(comp), r.rootPath)
+	return foxutils.Subpath(r.ComponentDir(comp), r.rootPath)
 }
 
 func (r *repo) ComponentAppSubpath(comp string) string {
-	return utils.Subpath(r.ComponentDir(comp), r.appPath)
+	return foxutils.Subpath(r.ComponentDir(comp), r.appPath)
 }
 
 func (r *repo) IsClean() bool {
