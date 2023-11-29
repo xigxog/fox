@@ -135,11 +135,7 @@ func (srv *ProxyServer) startPortForward(cfg *config.Config) *kubernetes.PortFor
 	defer cancel()
 
 	c := kubernetes.NewClient(cfg)
-
-	p, err := c.GetPlatform(ctx)
-	if err != nil {
-		log.Fatal("Error getting KubeFox Platform :%v", err)
-	}
+	p := c.GetPlatform()
 
 	pfReq := &kubernetes.PortForwardRequest{
 		Namespace: p.Namespace,

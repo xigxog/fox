@@ -96,7 +96,7 @@ func (r *Client) ListPlatforms(ctx context.Context) ([]v1alpha1.Platform, error)
 	return pList.Items, nil
 }
 
-func (c *Client) GetPlatform(ctx context.Context) (*v1alpha1.Platform, error) {
+func (c *Client) GetPlatform() *v1alpha1.Platform {
 	nn := client.ObjectKey{
 		Namespace: c.cfg.Flags.Namespace,
 		Name:      c.cfg.Flags.Platform,
@@ -124,7 +124,7 @@ func (c *Client) GetPlatform(ctx context.Context) (*v1alpha1.Platform, error) {
 		}
 	}
 
-	return platform, nil
+	return platform
 }
 
 func (c *Client) pickPlatform() *v1alpha1.Platform {

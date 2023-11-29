@@ -17,12 +17,23 @@ import (
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/xigxog/fox/efs"
 	"github.com/xigxog/fox/internal/config"
+	"github.com/xigxog/fox/internal/kubernetes"
 	"github.com/xigxog/fox/internal/log"
 	foxutils "github.com/xigxog/fox/internal/utils"
 	"github.com/xigxog/kubefox/utils"
 )
 
 func Init(cfg *config.Config) {
+	initApp(cfg)
+	log.InfoNewline()
+
+	// Creates new platform if none exist.
+	kubernetes.NewClient(cfg).GetPlatform()
+
+	log.Info("KubeFox App initialization complete!")
+}
+
+func initApp(cfg *config.Config) {
 	cfg.CleanPaths(true)
 
 	repoPath := cfg.Flags.RepoPath
@@ -97,9 +108,6 @@ func initGit(repoPath string, app *App, cfg *config.Config) {
 
 		r.CommitAll("And so it begins...")
 	}
-
-	log.InfoNewline()
-	log.Info("KubeFox App initialization complete!")
 }
 
 func initDir(in, out string) {

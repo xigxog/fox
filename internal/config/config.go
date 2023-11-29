@@ -188,6 +188,7 @@ func (cfg *Config) done() {
 	cfg.Fresh = true
 	cfg.Write()
 	log.InfoNewline()
+
 	log.Info("Congrats, you are ready to use KubeFox!")
 	log.Info("Check out the quickstart for next steps (https://docs.kubefox.io/quickstart/).")
 	log.Info("If you run into any problems please let us know on GitHub (https://github.com/xigxog/kubefox/issues).")

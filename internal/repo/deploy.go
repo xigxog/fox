@@ -103,14 +103,8 @@ func (r *repo) applyIPS(ctx context.Context, p *v1alpha1.Platform, spec *v1alpha
 // ensures all images exist. If there are any issues it will prompt the user to
 // correct them.
 func (r *repo) prepareDeployment(skipImageCheck bool) (*v1alpha1.Platform, *v1alpha1.AppDeploymentSpec, *v1alpha1.AppDeploymentDetails) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
 	spec, details := r.getDepSpecAndDetails()
-	platform, err := r.k8s.GetPlatform(ctx)
-	if err != nil {
-		log.Fatal("Error getting KubeFox Platform :%v", err)
-	}
+	platform := r.k8s.GetPlatform()
 
 	if !skipImageCheck {
 		allFound := true

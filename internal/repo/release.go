@@ -19,10 +19,7 @@ func (r *repo) Release(appDepId string) *v1alpha1.Release {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	platform, err := r.k8s.GetPlatform(ctx)
-	if err != nil {
-		log.Fatal("Error getting Platform: %v", err)
-	}
+	platform := r.k8s.GetPlatform()
 
 	appDep, err := r.findAppDep(ctx, platform, appDepId)
 	if err != nil {
