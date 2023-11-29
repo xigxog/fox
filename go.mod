@@ -2,9 +2,6 @@ module github.com/xigxog/fox
 
 go 1.21
 
-// TODO update when kubefox is released
-replace github.com/xigxog/kubefox => ../kubefox
-
 require (
 	github.com/cli/oauth v1.0.1
 	github.com/docker/docker v24.0.6+incompatible
@@ -15,7 +12,8 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.17.0
-	github.com/xigxog/kubefox v0.2.1-alpha
+	// TODO update when kubefox is released
+	github.com/xigxog/kubefox v0.2.5-alpha.0.20231128213313-6a2ef93c4062
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.28.3
 	k8s.io/apimachinery v0.28.3
