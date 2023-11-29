@@ -26,7 +26,7 @@ export GOARCH=amd64
 export GOOS=${GOOS:-"linux"}
 
 BIN="fox"
-TAR="${BIN}-$(basename ${TAG_REF})-${GOOS}-${GOARCH}.tar.gz"
+TAR="${BIN}-$(basename ${TAG_REF:-$HEAD_REF})-${GOOS}-${GOARCH}.tar.gz"
 BUILD_OUT_ROOT="bin"
 BUILD_OUT="${BUILD_OUT_ROOT}/${GOOS}"
 RELEASE_OUT="release"
