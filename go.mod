@@ -2,8 +2,6 @@ module github.com/xigxog/fox
 
 go 1.21
 
-replace github.com/xigxog/kubefox => ../kubefox
-
 require (
 	github.com/cli/oauth v1.0.1
 	github.com/docker/docker v24.0.7+incompatible
