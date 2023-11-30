@@ -242,4 +242,5 @@ func (r *repo) waitForReady(p *v1alpha1.Platform, spec *v1alpha1.AppDeploymentSp
 	defer cancel()
 
 	r.k8s.WaitPlatformReady(ctx, p, spec)
+	log.InfoNewline()
 }

@@ -146,7 +146,7 @@ func (c *Client) pickPlatform() *v1alpha1.Platform {
 		log.Info("You need to have a KubeFox Platform instance running to deploy your components.")
 		log.Info("Don't worry, 🦊 Fox can create one for you.")
 		if utils.YesNoPrompt("Would you like to create a KubeFox Platform?", true) {
-			return c.createPlatform()
+			return c.createPlatformPrompt()
 		} else {
 			log.Fatal("Error you must create a KubeFox Platform before deploying components.")
 		}
@@ -183,12 +183,16 @@ func (c *Client) pickPlatform() *v1alpha1.Platform {
 	return p
 }
 
-func (c *Client) createPlatform() *v1alpha1.Platform {
+func (c *Client) createPlatformPrompt() *v1alpha1.Platform {
 	name := utils.NamePrompt("KubeFox Platform", "", true)
 	namespace := utils.InputPrompt("Enter the Kubernetes namespace of the KubeFox Platform",
 		fmt.Sprintf("kubefox-%s", name), true)
 	log.InfoNewline()
 
+	return c.CreatePlatform(namespace, name)
+}
+
+func (c *Client) CreatePlatform(namespace, name string) *v1alpha1.Platform {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
@@ -230,14 +234,18 @@ func (c *Client) WaitPlatformReady(ctx context.Context, p *v1alpha1.Platform, sp
 	if err := c.WaitPodReady(ctx, p, "broker", ""); err != nil {
 		log.Fatal("Error while waiting: %v", err)
 	}
+	if err := c.WaitPodReady(ctx, p, "httpsrv", ""); err != nil {
+		log.Fatal("Error while waiting: %v", err)
+	}
 
-	for n, comp := range spec.Components {
-		log.Info("Waiting for component '%s' to be ready...", n)
-		if err := c.WaitPodReady(ctx, p, n, comp.Commit); err != nil {
-			log.Fatal("Error while waiting: %v", err)
+	if spec != nil {
+		for n, comp := range spec.Components {
+			log.Info("Waiting for component '%s' to be ready...", n)
+			if err := c.WaitPodReady(ctx, p, n, comp.Commit); err != nil {
+				log.Fatal("Error while waiting: %v", err)
+			}
 		}
 	}
-	log.InfoNewline()
 }
 
 func (c *Client) WaitPodReady(ctx context.Context, p *v1alpha1.Platform, comp, commit string) error {

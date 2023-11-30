@@ -25,6 +25,7 @@ type Flags struct {
 	ForceBuild    bool
 	NoCache       bool
 	PushImage     bool
+	Quickstart    bool
 	SkipDeploy    bool
 
 	WaitTime time.Duration

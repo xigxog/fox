@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"context"
 	_ "embed"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/go-git/go-git/v5"
@@ -25,12 +27,24 @@ import (
 
 func Init(cfg *config.Config) {
 	initApp(cfg)
-	log.InfoNewline()
 
-	// Creates new platform if none exist.
-	kubernetes.NewClient(cfg).GetPlatform()
+	if cfg.Flags.Quickstart {
+		c := kubernetes.NewClient(cfg)
+		p := c.CreatePlatform("kubefox-demo", "demo")
 
-	log.Info("KubeFox App initialization complete!")
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
+		defer cancel()
+
+		c.WaitPlatformReady(ctx, p, nil)
+
+		log.Info("KubeFox initialized for the quickstart guide!")
+
+	} else {
+		log.InfoNewline()
+		// Creates new platform if none exist.
+		kubernetes.NewClient(cfg).GetPlatform()
+		log.Info("KubeFox App initialization complete!")
+	}
 }
 
 func initApp(cfg *config.Config) {
@@ -38,6 +52,12 @@ func initApp(cfg *config.Config) {
 
 	repoPath := cfg.Flags.RepoPath
 	appPath := cfg.Flags.AppPath
+
+	if cfg.Flags.Quickstart {
+		initDir(efs.HelloWorldPath, appPath)
+		initGit(repoPath, &App{}, cfg)
+		return
+	}
 
 	app, err := ReadApp(appPath)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
@@ -95,14 +115,16 @@ func initGit(repoPath string, app *App, cfg *config.Config) {
 			remoteURL = fmt.Sprintf("https://github.com/%s/%s.git", cfg.GitHub.Org.Name, filepath.Base(repoPath))
 		}
 
-		remoteURL = foxutils.InputPrompt("Enter URL for remote Git repo", remoteURL, false)
-		if remoteURL != "" {
-			_, err := nr.CreateRemote(&gitcfg.RemoteConfig{
-				Name: "origin",
-				URLs: []string{remoteURL},
-			})
-			if err != nil {
-				log.Warn("Unable to set remote Git repo: %v", err)
+		if !cfg.Flags.Quickstart {
+			remoteURL = foxutils.InputPrompt("Enter URL for remote Git repo", remoteURL, false)
+			if remoteURL != "" {
+				_, err := nr.CreateRemote(&gitcfg.RemoteConfig{
+					Name: "origin",
+					URLs: []string{remoteURL},
+				})
+				if err != nil {
+					log.Warn("Unable to set remote Git repo: %v", err)
+				}
 			}
 		}
 

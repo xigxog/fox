@@ -89,6 +89,13 @@ func (cfg *Config) Load() {
 
 	b, err := os.ReadFile(cfg.path)
 	if errors.Is(err, fs.ErrNotExist) {
+		if cfg.Flags.Quickstart {
+			cfg.setupKind("kind")
+			cfg.Fresh = true
+			cfg.Write()
+			return
+		}
+
 		log.Info("It looks like this is the first time you are using 🦊 Fox. Welcome!")
 		log.InfoNewline()
 		log.Info("🦊 Fox needs some information from you to configure itself. The setup process only")
@@ -158,10 +165,8 @@ func (cfg *Config) Setup() {
 	log.Info("with kind you can skip this step.")
 	kindOnly := utils.YesNoPrompt("Are you only using KubeFox with local kind cluster?", false)
 	if kindOnly {
-		cfg.ContainerRegistry.Address = LocalRegistry
-		cfg.ContainerRegistry.Token = ""
-		cfg.Kind.ClusterName = utils.NamePrompt("kind cluster", "kind", true)
-		cfg.Kind.AlwaysLoad = true
+		name := utils.NamePrompt("kind cluster", "kind", true)
+		cfg.setupKind(name)
 		log.InfoNewline()
 		cfg.done()
 		return
@@ -192,6 +197,13 @@ func (cfg *Config) done() {
 	log.Info("Congrats, you are ready to use KubeFox!")
 	log.Info("Check out the quickstart for next steps (https://docs.kubefox.io/quickstart/).")
 	log.Info("If you run into any problems please let us know on GitHub (https://github.com/xigxog/kubefox/issues).")
+}
+
+func (cfg *Config) setupKind(name string) {
+	cfg.ContainerRegistry.Address = LocalRegistry
+	cfg.ContainerRegistry.Token = ""
+	cfg.Kind.ClusterName = name
+	cfg.Kind.AlwaysLoad = true
 }
 
 func (cfg *Config) setupGitHub() {
