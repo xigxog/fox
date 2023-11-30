@@ -40,7 +40,7 @@ func (r *repo) Deploy(name string, skipImageCheck bool) *v1alpha1.AppDeployment 
 	}
 	log.VerboseMarshal(d, "AppDeployment:")
 
-	if err := r.k8s.Upsert(ctx, d); err != nil {
+	if err := r.k8s.Merge(ctx, d, nil); err != nil {
 		log.Fatal("%v", err)
 	}
 

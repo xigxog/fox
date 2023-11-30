@@ -61,7 +61,7 @@ func (r *repo) Release(appDepId string) *v1alpha1.Release {
 		},
 	}
 
-	if err := r.k8s.Upsert(ctx, rel); err != nil {
+	if err := r.k8s.Apply(ctx, rel); err != nil {
 		log.Fatal("Error creating release: %v", err)
 	}
 

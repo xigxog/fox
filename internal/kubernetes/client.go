@@ -87,6 +87,14 @@ func (c *Client) Apply(ctx context.Context, obj client.Object) error {
 	return c.Client.Apply(ctx, obj, opts...)
 }
 
+func (c *Client) Merge(ctx context.Context, modified, original client.Object) error {
+	opts := []client.PatchOption{}
+	if c.cfg.Flags.DryRun {
+		opts = append(opts, client.DryRunAll)
+	}
+	return c.Client.Merge(ctx, modified, original, opts...)
+}
+
 func (r *Client) ListPlatforms(ctx context.Context) ([]v1alpha1.Platform, error) {
 	pList := &v1alpha1.PlatformList{}
 	if err := r.Client.List(ctx, pList); err != nil {
