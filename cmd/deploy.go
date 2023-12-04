@@ -20,6 +20,7 @@ var deployCmd = &cobra.Command{
 
 func init() {
 	deployCmd.Flags().StringVarP(&cfg.Flags.Version, "version", "s", "", "version to assign to the AppDeployment, making it immutable")
+	deployCmd.Flags().BoolVarP(&cfg.Flags.CreateTag, "create-tag", "t", false, `create Git tag using the AppDeployment version`)
 	addCommonDeployFlags(deployCmd)
 	rootCmd.AddCommand(deployCmd)
 }
