@@ -10,6 +10,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 	"github.com/xigxog/fox/internal/log"
+	"github.com/xigxog/fox/internal/utils"
+)
+
+const (
+	docsDir = "docs"
 )
 
 var docsCmd = &cobra.Command{
@@ -28,15 +33,12 @@ func init() {
 
 func generateDocs(cmd *cobra.Command, args []string) {
 	log.Verbose("Generating docs")
-	docsDir := "docs"
 
 	// ensure dir exists
-	if err := os.MkdirAll(docsDir, os.ModePerm); err != nil {
-		log.Fatal("Error creating docs dir '%s': %v", docsDir, err)
-	}
+	utils.EnsureDir(docsDir)
 
 	// remove any existing markdown files
-	mdFiles, err := filepath.Glob("docs/*.md")
+	mdFiles, err := filepath.Glob(docsDir + "/*.md")
 	if err != nil {
 		log.Fatal("Error removing existing docs: %v", err)
 	}

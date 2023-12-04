@@ -92,12 +92,25 @@ func (c *Client) Merge(ctx context.Context, modified, original client.Object) er
 	if c.cfg.Flags.DryRun {
 		opts = append(opts, client.DryRunAll)
 	}
-	return c.Client.Merge(ctx, modified, original, opts...)
+	err := c.Client.Merge(ctx, modified, original, opts...)
+
+	if k8s.IsNotFound(err) {
+		opts := []client.CreateOption{}
+		if c.cfg.Flags.DryRun {
+			opts = append(opts, client.DryRunAll)
+		}
+		copy := modified.DeepCopyObject().(client.Object)
+		err = c.Client.Create(ctx, modified, opts...)
+		// Restore TypeMeta.
+		modified.GetObjectKind().SetGroupVersionKind(copy.GetObjectKind().GroupVersionKind())
+	}
+
+	return err
 }
 
-func (r *Client) ListPlatforms(ctx context.Context) ([]v1alpha1.Platform, error) {
+func (c *Client) ListPlatforms(ctx context.Context) ([]v1alpha1.Platform, error) {
 	pList := &v1alpha1.PlatformList{}
-	if err := r.Client.List(ctx, pList); err != nil {
+	if err := c.Client.List(ctx, pList); err != nil {
 		return nil, fmt.Errorf("unable to list KubeFox Platforms: %w", err)
 	}
 

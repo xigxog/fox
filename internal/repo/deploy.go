@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -19,6 +20,10 @@ import (
 )
 
 func (r *repo) Deploy(name string, skipImageCheck bool) *v1alpha1.AppDeployment {
+	if r.cfg.Flags.CreateTag && !strings.HasSuffix(r.GetTagRef(), r.cfg.Flags.Version) {
+		r.CreateTag(r.cfg.Flags.Version)
+	}
+
 	p, spec, details := r.prepareDeployment(skipImageCheck)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)

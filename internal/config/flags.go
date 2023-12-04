@@ -22,6 +22,7 @@ type Flags struct {
 	VirtEnv       string
 
 	CreateVirtEnv bool
+	CreateTag     bool
 	ForceBuild    bool
 	NoCache       bool
 	PushImage     bool

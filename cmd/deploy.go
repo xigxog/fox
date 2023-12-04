@@ -35,6 +35,9 @@ func checkCommonDeployFlags(name string) {
 	if cfg.Flags.Platform != "" && cfg.Flags.Namespace == "" {
 		log.Fatal("'namespace' flag required if 'platform' flag is provided.")
 	}
+	if cfg.Flags.CreateTag && cfg.Flags.Version == "" {
+		log.Fatal("'version' flag required if 'create-tag' flag is set.")
+	}
 	if !utils.IsValidName(name) {
 		log.Fatal("Invalid resource name, valid names contain only lowercase alpha-numeric characters and dashes.")
 	}

@@ -23,6 +23,7 @@ var (
 
 func init() {
 	publishCmd.Flags().StringVarP(&cfg.Flags.Version, "version", "s", "", "version to assign to the AppDeployment, making it immutable")
+	publishCmd.Flags().BoolVarP(&cfg.Flags.CreateTag, "create-tag", "t", false, `create Git tag using the AppDeployment version`)
 	publishCmd.Flags().BoolVarP(&skipPush, "skip-push", "", false, `do not push image after build`)
 	publishCmd.Flags().BoolVarP(&cfg.Flags.SkipDeploy, "skip-deploy", "", false, `do not perform deployment after build`)
 	addCommonBuildFlags(publishCmd)

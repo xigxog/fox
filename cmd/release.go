@@ -18,6 +18,11 @@ specified AppDeployment. This causes genesis events matching components' routes
 to be automatically sent to the component with the specified environment being 
 injected.
 
+The AppDeployment can be identified by its name, commit, short-commit (first 7 
+characters), version, Git tag, or Git branch. 🦊 Fox will inspect the Kubernetes
+cluster to find a matching AppDeployment. If more than one AppDeployment is
+found you will be prompted to select the desired AppDeployment.
+
 Examples:
 
     # Release the AppDeployment named 'main' using the 'dev' Virtual Environment.
