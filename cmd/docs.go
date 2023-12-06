@@ -6,6 +6,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
@@ -21,10 +22,10 @@ var docsCmd = &cobra.Command{
 	Use:   "docs",
 	Run:   generateDocs,
 	Short: "Generate docs for 🦊 Fox",
-	Long: `
+	Long: strings.TrimSpace(`
 Run this command to automatically generate 🦊 Fox documentation. Output is 
 placed in the subdirectory docs of the working directory.
-`,
+`),
 }
 
 func init() {

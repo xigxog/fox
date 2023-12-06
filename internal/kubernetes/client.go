@@ -260,7 +260,7 @@ func (c *Client) WaitPlatformReady(ctx context.Context, p *v1alpha1.Platform, sp
 	}
 
 	if spec != nil {
-		for n, comp := range spec.Components {
+		for n, comp := range spec.App.Components {
 			log.Info("Waiting for component '%s' to be ready...", n)
 			if err := c.WaitPodReady(ctx, p, n, comp.Commit); err != nil {
 				log.Fatal("Error while waiting: %v", err)

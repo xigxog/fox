@@ -18,9 +18,10 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:              "fox",
-	PersistentPreRun: initViper,
-	Short:            "CLI for interacting with KubeFox",
+	Use:               "fox",
+	DisableAutoGenTag: true,
+	PersistentPreRun:  initViper,
+	Short:             "CLI for interacting with KubeFox",
 	Long: `
 🦊 Fox is a CLI for interacting with KubeFox. You can use it to build, deploy, 
 and release your KubeFox Apps.

@@ -113,7 +113,7 @@ func (r *repo) prepareDeployment(skipImageCheck bool) (*v1alpha1.Platform, *v1al
 
 	if !skipImageCheck {
 		allFound := true
-		for n, c := range spec.Components {
+		for n, c := range spec.App.Components {
 			img := r.GetCompImage(n, c.Commit)
 			if found, _ := r.DoesImageExists(img, false); found {
 				log.Info("Component image '%s' exists.", img)
@@ -139,7 +139,7 @@ func (r *repo) prepareDeployment(skipImageCheck bool) (*v1alpha1.Platform, *v1al
 		}
 	}
 
-	for compName, comp := range spec.Components {
+	for compName, comp := range spec.App.Components {
 		if err := r.extractCompDef(compName, comp); err != nil {
 			log.Fatal("Error getting component '%s' definition: %v", compName, err)
 		}
@@ -170,13 +170,13 @@ func (r *repo) getDepSpecAndDetails() (*v1alpha1.AppDeploymentSpec, *v1alpha1.Ap
 		depSpec.App.ContainerRegistry = fmt.Sprintf("%s/%s", r.cfg.ContainerRegistry.Address, r.app.Name)
 	}
 
-	depSpec.Components = map[string]*v1alpha1.Component{}
+	depSpec.App.Components = map[string]*v1alpha1.Component{}
 	for _, compDir := range compsDir {
 		if !compDir.IsDir() {
 			continue
 		}
 		compName := utils.CleanName(compDir.Name())
-		depSpec.Components[compName] = &v1alpha1.Component{
+		depSpec.App.Components[compName] = &v1alpha1.Component{
 			Commit: r.GetCompCommit(compDir.Name()).Hash.String(),
 		}
 	}

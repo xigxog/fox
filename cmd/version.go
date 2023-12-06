@@ -41,7 +41,7 @@ func runVer(cmd *cobra.Command, args []string) {
 	}
 
 	if modified {
-		log.Warn("binary built from source with uncommitted changes")
+		log.Verbose("binary built from source with uncommitted changes")
 	}
 	log.Marshal(map[string]any{
 		"version": version,

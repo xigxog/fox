@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"strings"
+
 	"github.com/spf13/cobra"
 	"github.com/xigxog/fox/internal/repo"
 )
@@ -11,18 +13,15 @@ var buildCmd = &cobra.Command{
 	PreRun: setup,
 	Run:    runBuild,
 	Short:  "Build and optionally push an OCI image of component",
-	Long: `
+	Long: strings.TrimSpace(`
 The build command will use Docker to build the specified component. By default
 components are built using a KubeFox defined Dockerfile. A custom Dockerfile can
 be provided my placing it in the root directory of the component. Please note
 that the build working directory is the root of the repository, not the
-component directory.
-
-Examples:
-
-    # Build and push OCI image for my-component.
-    fox build my-component --publish
-`,
+component directory.`),
+	Example: strings.TrimSpace(`
+# Build and push OCI image for my-component.
+fox build my-component --publish`),
 }
 
 func init() {

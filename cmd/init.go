@@ -2,6 +2,7 @@ package cmd
 
 import (
 	_ "embed"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/xigxog/fox/internal/repo"
@@ -13,11 +14,11 @@ var initCmd = &cobra.Command{
 	Args:   cobra.NoArgs,
 	PreRun: setup,
 	Run:    initRepo,
-	Long: `
+	Long: strings.TrimSpace(`
 The init command creates the skelton of a KubeFox App and ensures a Git 
 repository is present. It will optionally create simple 'hello-world' app to get
 you started.
-`,
+`),
 }
 
 func init() {

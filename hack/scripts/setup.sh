@@ -6,6 +6,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." &>/dev/null && pwd -P)"
 cd "${REPO_ROOT}"
 
 SCRIPTS="hack/scripts"
+KUBEFOX_SRC="../kubefox"
 
 COMPONENT="fox"
 COMPONENT_COMMIT=$(git rev-parse HEAD)
