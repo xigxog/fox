@@ -12,8 +12,7 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.17.0
-	// TODO update when kubefox is released
-	github.com/xigxog/kubefox v0.2.5-alpha.0.20231208033510-34928eb203fb
+	github.com/xigxog/kubefox v0.3.0-alpha
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.28.4
 	k8s.io/apimachinery v0.28.4

@@ -229,12 +229,8 @@ github.com/subosito/gotenv v1.6.0 h1:9NlTDc1FTs4qu0DDq7AEtTPNw6SVm7uBMsUCUjABIf8
 github.com/subosito/gotenv v1.6.0/go.mod h1:Dk4QP5c2W3ibzajGcXpNraDfq2IrhjMIvMSWPKKo0FU=
 github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=
 github.com/xanzy/ssh-agent v0.3.3/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI1Bc68Uw=
-github.com/xigxog/kubefox v0.2.5-alpha.0.20231206144113-48f17b47cb37 h1:jgXm3ga62ZnY8oejlI173Z7TfTBtXeOZbJQpArrXiw4=
-github.com/xigxog/kubefox v0.2.5-alpha.0.20231206144113-48f17b47cb37/go.mod h1:9qjm+/xmMZUbXct3cf37+rOsEwapMtLORwZWExzZgT0=
-github.com/xigxog/kubefox v0.2.5-alpha.0.20231207161131-766472f99055 h1:xZK7obOPCJcH7PrAJUE5f4SxRBka/ujvGJYtpXTCYIM=
-github.com/xigxog/kubefox v0.2.5-alpha.0.20231207161131-766472f99055/go.mod h1:9qjm+/xmMZUbXct3cf37+rOsEwapMtLORwZWExzZgT0=
-github.com/xigxog/kubefox v0.2.5-alpha.0.20231208033510-34928eb203fb h1:P2u33h2NFOZGbDooJxWlmJKQAgPBv6J3wPaoOG93bVo=
-github.com/xigxog/kubefox v0.2.5-alpha.0.20231208033510-34928eb203fb/go.mod h1:9qjm+/xmMZUbXct3cf37+rOsEwapMtLORwZWExzZgT0=
+github.com/xigxog/kubefox v0.3.0-alpha h1:0vrrMQ5E2yTBqkZocq4wWYzIq8dcEiayXECUhPoLgs0=
+github.com/xigxog/kubefox v0.3.0-alpha/go.mod h1:9qjm+/xmMZUbXct3cf37+rOsEwapMtLORwZWExzZgT0=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
