@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	backend kit.Dependency
+	backend kit.ComponentDep
 )
 
 func main() {
@@ -16,7 +16,7 @@ func main() {
 
 	backend = k.Component("backend")
 
-	k.EnvVar("subPath", env.Unique())
+	k.EnvVar("subPath", env.Unique)
 	k.Route("Path(`/{{.Env.subPath}}/hello`)", sayHello)
 
 	k.Start()

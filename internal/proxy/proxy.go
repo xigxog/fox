@@ -17,7 +17,7 @@ import (
 	"github.com/xigxog/fox/internal/kubernetes"
 	"github.com/xigxog/fox/internal/log"
 	"github.com/xigxog/kubefox/api"
-	kubefox "github.com/xigxog/kubefox/core"
+	"github.com/xigxog/kubefox/core"
 )
 
 type ProxyServer struct {
@@ -81,11 +81,11 @@ func (srv *ProxyServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	req.URL.Scheme = "http"
 	req.RequestURI = ""
 
-	env := kubefox.GetParamOrHeader(req, api.HeaderEnv, api.HeaderAbbrvEnv, api.HeaderShortEnv)
+	env := core.GetParamOrHeader(req, api.HeaderEnv, api.HeaderAbbrvEnv, api.HeaderShortEnv)
 	if env == "" && srv.cfg.Flags.VirtEnv != "" {
 		req.Header.Set(api.HeaderEnv, srv.cfg.Flags.VirtEnv)
 	}
-	dep := kubefox.GetParamOrHeader(req, api.HeaderDep, api.HeaderAbbrvDep, api.HeaderShortDep)
+	dep := core.GetParamOrHeader(req, api.HeaderDep, api.HeaderAbbrvDep, api.HeaderShortDep)
 	if dep == "" && srv.cfg.Flags.AppDeployment != "" {
 		req.Header.Set(api.HeaderDep, srv.cfg.Flags.AppDeployment)
 	}

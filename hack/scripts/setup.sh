@@ -6,13 +6,13 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." &>/dev/null && pwd -P)"
 cd "${REPO_ROOT}"
 
 SCRIPTS="hack/scripts"
-KUBEFOX_SRC="../kubefox"
+EXAMPLES_SRC="../examples"
 
 COMPONENT="fox"
 COMPONENT_COMMIT=$(git rev-parse HEAD)
 ROOT_COMMIT=${COMPONENT_COMMIT}
 
-HEAD_REF=$(git symbolic-ref -q HEAD)
+HEAD_REF=$(git symbolic-ref -q HEAD || true)
 TAG_REF=$(git describe --tags --exact-match 2>/dev/null | xargs -I % echo "refs/tags/%")
 
 CONTAINER_REGISTRY=${CONTAINER_REGISTRY:-"ghcr.io/xigxog"}

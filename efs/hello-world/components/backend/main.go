@@ -6,13 +6,13 @@ import (
 )
 
 var (
-	who kit.EnvVar
+	who kit.EnvVarDep
 )
 
 func main() {
 	k := kit.New()
 
-	who = k.EnvVar("who", env.Required())
+	who = k.EnvVar("who", env.Required)
 	k.Default(sayWho)
 
 	k.Start()
