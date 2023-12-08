@@ -8,7 +8,7 @@ if ${DEBUG}; then
 	DOCKERFILE="--file Dockerfile.debug ."
 fi
 
-buildah bud --build-arg COMPRESS="${COMPRESS}" --tag "${IMAGE}" ${DOCKERFILE}
+buildah bud --build-arg BIN="${BUILD_OUT}/${BIN}" --build-arg COMPRESS="${COMPRESS}" --tag "${IMAGE}" ${DOCKERFILE}
 
 if ${PUSH}; then
 	buildah push "${IMAGE}"

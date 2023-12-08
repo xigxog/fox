@@ -15,5 +15,3 @@ const (
 
 //go:embed all:*
 var EFS embed.FS
-
-// TODO update demo code

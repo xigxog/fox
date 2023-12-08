@@ -1,9 +1,10 @@
 # Compress binary
 FROM ghcr.io/xigxog/upx:4.2.1 AS upx
 
+ARG BIN
 ARG COMPRESS=false
 
-COPY ./bin/fox /fox
+COPY ${BIN} /fox
 RUN if ${COMPRESS}; then upx /fox; fi
 
 # Runtime
