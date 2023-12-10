@@ -38,9 +38,9 @@ type DockerfileTar struct {
 
 func (r *repo) Build(compDirName string) string {
 	img := r.GetCompImageFromDir(compDirName)
-	appYaml := r.AppYAMLBuildSubpath(compDirName, "go.mod")
+	appYaml := r.AppYAMLBuildSubpath()
 	compName := utils.CleanName(compDirName)
-	compDir := r.ComponentBuildSubpath(compDirName, "go.mod")
+	compDir := r.ComponentBuildSubpath(compDirName)
 	compCommit := r.GetCompCommit(compDirName).Hash.String()
 	rootCommit := r.GetRootCommit()
 	headRef := r.GetHeadRef()
@@ -78,7 +78,7 @@ func (r *repo) Build(compDirName string) string {
 		log.Verbose("Using custom Dockerfile '%s' for build", dfPath)
 	}
 
-	dfi, err := NewDFI(r.BuildRoot(compDirName, "go.mod"), df)
+	dfi, err := NewDFI(r.cfg.RepoPath, df)
 	if err != nil {
 		log.Fatal("Error creating container tar: %v", err)
 	}
@@ -269,7 +269,7 @@ func NewDFI(path string, df []byte) (*DockerfileTar, error) {
 	if err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}
-	var ignore []string
+	ignore := []string{".git"}
 	if dif != nil {
 		ignore, err = ignorefile.ReadAll(dif)
 		if err != nil {

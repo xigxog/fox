@@ -29,7 +29,6 @@ and release your KubeFox Apps.
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.RepoPath, "repo", "r", "", "path to directory containing Git repository")
 	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.AppPath, "app", "a", "", "path to directory containing KubeFox App")
 	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.OutFormat, "output", "o", "yaml", `output format, one of ["json", "yaml"]`)
 	rootCmd.PersistentFlags().BoolVarP(&cfg.Flags.Info, "info", "i", false, "enable info output")

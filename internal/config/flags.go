@@ -6,7 +6,6 @@ type Flags struct {
 	// persistent flags defined in root command
 	AppPath   string
 	OutFormat string
-	RepoPath  string
 
 	DryRun  bool
 	Info    bool

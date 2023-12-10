@@ -50,16 +50,13 @@ func Init(cfg *config.Config) {
 func initApp(cfg *config.Config) {
 	cfg.CleanPaths(true)
 
-	repoPath := cfg.Flags.RepoPath
-	appPath := cfg.Flags.AppPath
-
 	if cfg.Flags.Quickstart {
-		initDir(efs.HelloWorldPath, appPath)
-		initGit(repoPath, &App{}, cfg)
+		initDir(efs.HelloWorldPath, cfg.AppPath)
+		initGit(cfg.RepoPath, &App{}, cfg)
 		return
 	}
 
-	app, err := ReadApp(appPath)
+	app, err := ReadApp(cfg.AppPath)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		log.Error("An KubeFox App definition already exists but appears to be invalid: %v.", err)
 		if !foxutils.YesNoPrompt("Would you like to reinitialize the app?", true) {
@@ -68,7 +65,7 @@ func initApp(cfg *config.Config) {
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		log.VerboseMarshal(app, "App definition:")
 		log.Info("A valid KubeFox App definition already exists.")
-		initGit(repoPath, app, cfg)
+		initGit(cfg.RepoPath, app, cfg)
 		return
 	}
 
@@ -78,8 +75,8 @@ func initApp(cfg *config.Config) {
 	log.Info("To get things started quickly 🦊 Fox can create a 'hello-world' KubeFox App which")
 	log.Info("includes two components and example environments for testing.")
 	if foxutils.YesNoPrompt("Would you like to initialize the 'hello-world' KubeFox App?", false) {
-		initDir(efs.HelloWorldPath, appPath)
-		initGit(repoPath, app, cfg)
+		initDir(efs.HelloWorldPath, cfg.AppPath)
+		initGit(cfg.RepoPath, app, cfg)
 		return
 	}
 	log.InfoNewline()
@@ -88,12 +85,12 @@ func initApp(cfg *config.Config) {
 	log.Info("the app. The name is used as part of Kubernetes resource names so it must")
 	log.Info("contain only lowercase alpha-numeric characters and dashes. But don't worry you")
 	log.Info("can enter a more human friendly title and description.")
-	app.Name = foxutils.NamePrompt("KubeFox App", utils.CleanName(appPath), true)
+	app.Name = foxutils.NamePrompt("KubeFox App", utils.CleanName(cfg.AppPath), true)
 	app.Title = foxutils.InputPrompt("Enter the KubeFox App's title", "", false)
 	app.Description = foxutils.InputPrompt("Enter the KubeFox App's description", "", false)
 
-	WriteApp(appPath, app)
-	initGit(repoPath, app, cfg)
+	WriteApp(cfg.AppPath, app)
+	initGit(cfg.RepoPath, app, cfg)
 }
 
 func initGit(repoPath string, app *App, cfg *config.Config) {

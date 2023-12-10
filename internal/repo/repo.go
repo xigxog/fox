@@ -22,9 +22,6 @@ type repo struct {
 	cfg *config.Config
 	app *App
 
-	rootPath string
-	appPath  string
-
 	gitRepo *git.Repository
 	k8s     *kubernetes.Client
 	docker  *docker.Client
@@ -40,22 +37,19 @@ type App struct {
 func New(cfg *config.Config) *repo {
 	cfg.CleanPaths(false)
 
-	repoPath := cfg.Flags.RepoPath
-	appPath := cfg.Flags.AppPath
-
-	if !strings.HasPrefix(appPath, repoPath) {
+	if !strings.HasPrefix(cfg.AppPath, cfg.RepoPath) {
 		log.Fatal("The app is not part of the Git repo.")
 	}
 
-	app, err := ReadApp(appPath)
+	app, err := ReadApp(cfg.AppPath)
 	if err != nil {
 		log.Fatal("Error reading the repo's 'app.yaml', try running 'fox init': %v", err)
 	}
 
-	log.Verbose("Opening git repo '%s'", repoPath)
-	gitRepo, err := git.PlainOpen(repoPath)
+	log.Verbose("Opening git repo '%s'", cfg.RepoPath)
+	gitRepo, err := git.PlainOpen(cfg.RepoPath)
 	if err != nil {
-		log.Fatal("Error opening git repo '%s': %v", repoPath, err)
+		log.Fatal("Error opening git repo '%s': %v", cfg.RepoPath, err)
 	}
 
 	d, err := docker.NewClientWithOpts(docker.FromEnv, docker.WithAPIVersionNegotiation())
@@ -64,13 +58,11 @@ func New(cfg *config.Config) *repo {
 	}
 
 	return &repo{
-		cfg:      cfg,
-		app:      app,
-		rootPath: repoPath,
-		appPath:  appPath,
-		gitRepo:  gitRepo,
-		k8s:      kubernetes.NewClient(cfg),
-		docker:   d,
+		cfg:     cfg,
+		app:     app,
+		gitRepo: gitRepo,
+		k8s:     kubernetes.NewClient(cfg),
+		docker:  d,
 	}
 }
 
@@ -204,7 +196,7 @@ func (r *repo) GetCommit(path string) *object.Commit {
 		log.Fatal("Error finding commit hash: uncommitted changes present")
 	}
 
-	subPath := foxutils.Subpath(path, r.rootPath)
+	subPath := foxutils.Subpath(path, r.cfg.RepoPath)
 	iter, err := r.gitRepo.Log(&git.LogOptions{
 		PathFilter: func(c string) bool {
 			return strings.HasPrefix(c, subPath)
@@ -225,25 +217,16 @@ func (r *repo) GetCommit(path string) *object.Commit {
 	return commit
 }
 
-func (r *repo) BuildRoot(dir, buildFile string) string {
-	root := foxutils.Find(buildFile, r.ComponentDir(dir), r.rootPath)
-	if root == "" {
-		root = r.rootPath
-	}
-	log.Verbose("build root: %s", root)
-	return root
+func (r *repo) AppYAMLBuildSubpath() string {
+	return foxutils.Subpath(filepath.Join(r.cfg.AppPath, "app.yaml"), r.cfg.RepoPath)
 }
 
-func (r *repo) AppYAMLBuildSubpath(dir, buildFile string) string {
-	return foxutils.Subpath(filepath.Join(r.appPath, "app.yaml"), r.BuildRoot(dir, buildFile))
-}
-
-func (r *repo) ComponentBuildSubpath(dir, buildFile string) string {
-	return foxutils.Subpath(r.ComponentDir(dir), r.BuildRoot(dir, buildFile))
+func (r *repo) ComponentBuildSubpath(compDirName string) string {
+	return foxutils.Subpath(r.ComponentDir(compDirName), r.cfg.RepoPath)
 }
 
 func (r *repo) ComponentsDir() string {
-	return filepath.Join(r.appPath, "components")
+	return filepath.Join(r.cfg.AppPath, "components")
 }
 
 func (r *repo) ComponentDir(comp string) string {
@@ -251,7 +234,7 @@ func (r *repo) ComponentDir(comp string) string {
 }
 
 func (r *repo) ComponentRepoSubpath(comp string) string {
-	return foxutils.Subpath(r.ComponentDir(comp), r.rootPath)
+	return foxutils.Subpath(r.ComponentDir(comp), r.cfg.RepoPath)
 }
 
 func (r *repo) IsClean() bool {

@@ -29,6 +29,9 @@ type Config struct {
 	Kind              Kind              `json:"kind"`
 	ContainerRegistry ContainerRegistry `json:"containerRegistry"`
 
+	RepoPath string `json:"-"`
+	AppPath  string `json:"-"`
+
 	Flags Flags `json:"-"`
 	Fresh bool  `json:"-"`
 
@@ -122,33 +125,32 @@ func (cfg *Config) Load() {
 func (cfg *Config) CleanPaths(defAppToWd bool) {
 	var err error
 
-	if cfg.Flags.RepoPath == "" {
-		cfg.Flags.RepoPath = utils.Find(".git", utils.Wd(), string(filepath.Separator))
-	}
-	cfg.Flags.RepoPath, err = filepath.Abs(cfg.Flags.RepoPath)
+	repoPath := utils.Find(".git", utils.Wd(), string(filepath.Separator))
+	cfg.RepoPath, err = filepath.Abs(repoPath)
 	if err != nil {
 		log.Fatal("Unable to resolve repo path: %v", err)
 	}
 
+	var appPath string
 	if cfg.Flags.AppPath == "" {
 		if defAppToWd {
-			cfg.Flags.AppPath = utils.Wd()
+			appPath = utils.Wd()
 		} else {
-			cfg.Flags.AppPath = utils.Find("app.yaml", utils.Wd(), cfg.Flags.RepoPath)
+			appPath = utils.Find("app.yaml", utils.Wd(), cfg.RepoPath)
 		}
 	}
-	cfg.Flags.AppPath, err = filepath.Abs(cfg.Flags.AppPath)
+	cfg.AppPath, err = filepath.Abs(appPath)
 	if err != nil {
 		log.Fatal("Unable to resolve app path: %v", err)
 	}
 
-	log.Verbose("Repo path: %s", cfg.Flags.RepoPath)
-	log.Verbose("App path: %s", cfg.Flags.AppPath)
+	log.Verbose("Repo path: %s", cfg.RepoPath)
+	log.Verbose("App path: %s", cfg.AppPath)
 
-	if cfg.Flags.AppPath == "" {
+	if cfg.AppPath == "" {
 		log.Fatal("Could not find app definition (app.yaml).")
 	}
-	if !strings.HasPrefix(cfg.Flags.AppPath, cfg.Flags.RepoPath) {
+	if !strings.HasPrefix(cfg.AppPath, cfg.RepoPath) {
 		log.Fatal("The app is not part of the Git repo.")
 	}
 }
