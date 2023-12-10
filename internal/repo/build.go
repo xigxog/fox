@@ -38,8 +38,9 @@ type DockerfileTar struct {
 
 func (r *repo) Build(compDirName string) string {
 	img := r.GetCompImageFromDir(compDirName)
-	compDir := r.ComponentAppSubpath(compDirName)
+	appYaml := r.AppYAMLBuildSubpath(compDirName, "go.mod")
 	compName := utils.CleanName(compDirName)
+	compDir := r.ComponentBuildSubpath(compDirName, "go.mod")
 	compCommit := r.GetCompCommit(compDirName).Hash.String()
 	rootCommit := r.GetRootCommit()
 	headRef := r.GetHeadRef()
@@ -48,6 +49,7 @@ func (r *repo) Build(compDirName string) string {
 	now := time.Now().Format(time.RFC3339)
 
 	buildArgs := map[string]*string{
+		"APP_YAML":         &appYaml,
 		"BUILD_DATE":       &now,
 		"COMPONENT":        &compName,
 		"COMPONENT_DIR":    &compDir,
@@ -76,7 +78,7 @@ func (r *repo) Build(compDirName string) string {
 		log.Verbose("Using custom Dockerfile '%s' for build", dfPath)
 	}
 
-	dfi, err := NewDFI(r.appPath, df)
+	dfi, err := NewDFI(r.BuildRoot(compDirName, "go.mod"), df)
 	if err != nil {
 		log.Fatal("Error creating container tar: %v", err)
 	}

@@ -40,8 +40,7 @@ func Subpath(path, root string) string {
 	return "" +
 		strings.TrimPrefix( // trim separator
 			strings.TrimPrefix( // trim repo path
-				path,
-				root,
+				path, root,
 			),
 			string(filepath.Separator),
 		)

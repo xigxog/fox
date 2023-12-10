@@ -1,4 +1,4 @@
-module github.com/xigxog/kubefox/examples/hello-world/kubefox
+module github.com/xigxog/kubefox/quickstart
 
 go 1.21
 

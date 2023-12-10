@@ -1,6 +1,7 @@
 ## Build time
 FROM golang:1.21 as builder
 
+ARG APP_YAML
 ARG BUILD_DATE
 ARG COMPONENT_DIR
 ARG COMPONENT
@@ -11,8 +12,10 @@ ARG TAG_REF
 
 WORKDIR /app
 
+# TODO deal nested app repos
+
 # Cache dependencies.
-COPY app.yaml go.mo[d] go.su[m] ./
+COPY ${APP_YAML} go.mo[d] go.su[m] ./
 RUN go mod download || true
 
 COPY ./ ./

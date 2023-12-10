@@ -225,6 +225,23 @@ func (r *repo) GetCommit(path string) *object.Commit {
 	return commit
 }
 
+func (r *repo) BuildRoot(dir, buildFile string) string {
+	root := foxutils.Find(buildFile, r.ComponentDir(dir), r.rootPath)
+	if root == "" {
+		root = r.rootPath
+	}
+	log.Verbose("build root: %s", root)
+	return root
+}
+
+func (r *repo) AppYAMLBuildSubpath(dir, buildFile string) string {
+	return foxutils.Subpath(filepath.Join(r.appPath, "app.yaml"), r.BuildRoot(dir, buildFile))
+}
+
+func (r *repo) ComponentBuildSubpath(dir, buildFile string) string {
+	return foxutils.Subpath(r.ComponentDir(dir), r.BuildRoot(dir, buildFile))
+}
+
 func (r *repo) ComponentsDir() string {
 	return filepath.Join(r.appPath, "components")
 }
@@ -235,10 +252,6 @@ func (r *repo) ComponentDir(comp string) string {
 
 func (r *repo) ComponentRepoSubpath(comp string) string {
 	return foxutils.Subpath(r.ComponentDir(comp), r.rootPath)
-}
-
-func (r *repo) ComponentAppSubpath(comp string) string {
-	return foxutils.Subpath(r.ComponentDir(comp), r.appPath)
 }
 
 func (r *repo) IsClean() bool {

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/xigxog/kubefox/kit"
-	"github.com/xigxog/kubefox/kit/env"
 )
 
 var (
@@ -15,9 +14,7 @@ func main() {
 	k := kit.New()
 
 	backend = k.Component("backend")
-
-	k.EnvVar("subPath", env.Unique)
-	k.Route("Path(`/{{.Env.subPath}}/hello`)", sayHello)
+	k.Route("Path(`/{{subPath|unique}}/hello`)", sayHello)
 
 	k.Start()
 }
