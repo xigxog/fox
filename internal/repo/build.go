@@ -36,6 +36,9 @@ type DockerfileTar struct {
 	read       int
 }
 
+// TODO switch to Buildah
+// https://github.com/containers/buildah/blob/e089136922680583a37e40d97e86818b09be4875/imagebuildah/build.go#L66
+
 func (r *repo) Build(compDirName string) string {
 	img := r.GetCompImageFromDir(compDirName)
 	appYaml := r.AppYAMLBuildSubpath()

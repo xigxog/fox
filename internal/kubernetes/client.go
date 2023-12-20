@@ -75,10 +75,6 @@ func (c *Client) Create(ctx context.Context, obj client.Object) error {
 	return c.Client.Create(ctx, obj, opts...)
 }
 
-func (c *Client) Upsert(ctx context.Context, obj client.Object) error {
-	return c.Client.Upsert(ctx, obj, c.cfg.Flags.DryRun)
-}
-
 func (c *Client) Apply(ctx context.Context, obj client.Object) error {
 	opts := []client.PatchOption{}
 	if c.cfg.Flags.DryRun {

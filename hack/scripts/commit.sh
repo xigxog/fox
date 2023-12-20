@@ -4,6 +4,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/setup.sh"
 
 ${SCRIPTS}/clean.sh
 
+go mod tidy
 go fmt ./...
 go vet ./...
 
