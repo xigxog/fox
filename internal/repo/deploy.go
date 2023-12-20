@@ -78,7 +78,7 @@ func (r *repo) Publish(deployName string) *v1alpha1.AppDeployment {
 func (r *repo) applyIPS(ctx context.Context, p *v1alpha1.Platform, spec *v1alpha1.AppDeploymentSpec) {
 	if r.cfg.ContainerRegistry.Token != "" {
 		cr := r.cfg.ContainerRegistry
-		name := fmt.Sprintf("%s-image-pull-secret", spec.App.Name)
+		name := fmt.Sprintf("%s-image-pull-secret", spec.AppName)
 		dockerCfg := fmt.Sprintf(`{"auths":{"%s":{"username":"kubefox","password":"%s"}}}`, cr.Address, cr.Token)
 
 		s := &corev1.Secret{
@@ -100,7 +100,7 @@ func (r *repo) applyIPS(ctx context.Context, p *v1alpha1.Platform, spec *v1alpha
 		if err := r.k8s.Apply(ctx, s); err != nil {
 			log.Fatal("%v", err)
 		}
-		spec.App.ImagePullSecretName = name
+		spec.ImagePullSecretName = name
 	}
 }
 
@@ -113,7 +113,7 @@ func (r *repo) prepareDeployment(skipImageCheck bool) (*v1alpha1.Platform, *v1al
 
 	if !skipImageCheck {
 		allFound := true
-		for n, c := range spec.App.Components {
+		for n, c := range spec.Components {
 			img := r.GetCompImage(n, c.Commit)
 			if found, _ := r.DoesImageExists(img, false); found {
 				log.Info("Component image '%s' exists.", img)
@@ -139,7 +139,7 @@ func (r *repo) prepareDeployment(skipImageCheck bool) (*v1alpha1.Platform, *v1al
 		}
 	}
 
-	for compName, comp := range spec.App.Components {
+	for compName, comp := range spec.Components {
 		if err := r.extractCompDef(compName, comp); err != nil {
 			log.Fatal("Error getting component '%s' definition: %v", compName, err)
 		}
@@ -157,33 +157,33 @@ func (r *repo) getDepSpecAndDetails() (*v1alpha1.AppDeploymentSpec, *v1alpha1.Ap
 	commit := r.GetCommit("")
 
 	depSpec := &v1alpha1.AppDeploymentSpec{}
-	depSpec.App.Name = r.app.Name
-	depSpec.App.Commit = commit.Hash.String()
-	depSpec.App.CommitTime = metav1.NewTime(commit.Committer.When)
+	depSpec.AppName = r.app.Name
+	depSpec.Commit = commit.Hash.String()
+	depSpec.CommitTime = metav1.NewTime(commit.Committer.When)
 	depSpec.Version = r.cfg.Flags.Version
-	depSpec.App.RepoURL = r.GetRepoURL()
-	depSpec.App.Branch = r.GetHeadRef()
-	depSpec.App.Tag = r.GetTagRef()
+	depSpec.RepoURL = r.GetRepoURL()
+	depSpec.Branch = r.GetHeadRef()
+	depSpec.Tag = r.GetTagRef()
 	if r.app.ContainerRegistry != "" {
-		depSpec.App.ContainerRegistry = r.app.ContainerRegistry
+		depSpec.ContainerRegistry = r.app.ContainerRegistry
 	} else {
-		depSpec.App.ContainerRegistry = fmt.Sprintf("%s/%s", r.cfg.ContainerRegistry.Address, r.app.Name)
+		depSpec.ContainerRegistry = fmt.Sprintf("%s/%s", r.cfg.ContainerRegistry.Address, r.app.Name)
 	}
 
-	depSpec.App.Components = map[string]*v1alpha1.Component{}
+	depSpec.Components = map[string]*v1alpha1.Component{}
 	for _, compDir := range compsDir {
 		if !compDir.IsDir() {
 			continue
 		}
 		compName := utils.CleanName(compDir.Name())
-		depSpec.App.Components[compName] = &v1alpha1.Component{
+		depSpec.Components[compName] = &v1alpha1.Component{
 			Commit: r.GetCompCommit(compDir.Name()).Hash.String(),
 		}
 	}
 
 	depDetails := &v1alpha1.AppDeploymentDetails{}
-	depDetails.App.Title = r.app.Title
-	depDetails.App.Description = r.app.Description
+	depDetails.Title = r.app.Title
+	depDetails.Description = r.app.Description
 
 	return depSpec, depDetails
 }
