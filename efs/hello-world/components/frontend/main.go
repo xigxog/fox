@@ -14,7 +14,7 @@ func main() {
 	k := kit.New()
 
 	backend = k.Component("backend")
-	k.Route("Path(`/{{subPath|unique}}/hello`)", sayHello)
+	k.Route("Path(`/{{.Env.subPath}}/hello`)", sayHello)
 
 	k.Start()
 }
@@ -26,10 +26,10 @@ func sayHello(k kit.Kontext) error {
 	}
 
 	msg := fmt.Sprintf("👋 Hello %s!", r.Str())
-	k.Log().Debug(msg)
-
 	json := map[string]any{"msg": msg}
 	html := fmt.Sprintf(htmlTmpl, msg)
+	k.Log().Debug(msg)
+
 	return k.Resp().SendAccepts(json, html, msg)
 }
 

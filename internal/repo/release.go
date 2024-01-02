@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/xigxog/fox/internal/log"
+	"github.com/xigxog/fox/internal/utils"
 	"github.com/xigxog/kubefox/api"
 	"github.com/xigxog/kubefox/api/kubernetes/v1alpha1"
 	"github.com/xigxog/kubefox/core"
@@ -39,6 +40,29 @@ func (r *repo) Release(appDepId string) *v1alpha1.VirtualEnv {
 		}
 	} else {
 		envSnapName = envSnap.Name
+	}
+
+	problems, err := appDep.Validate(envSnap.Data, func(name string, typ api.ComponentType) (api.Adapter, error) {
+		switch typ {
+		case api.ComponentTypeHTTPAdapter:
+			a := &v1alpha1.HTTPAdapter{}
+			if err := r.k8s.Get(ctx, k8s.Key(appDep.Namespace, name), a); err != nil {
+				return nil, err
+			}
+			return a, nil
+
+		default:
+			return nil, core.ErrNotFound()
+		}
+	})
+	if err != nil {
+		log.Fatal("Error validating Release: %v", err)
+	}
+	if len(problems) > 0 {
+		log.InfoMarshal(problems, "Release problems:")
+		if !utils.YesNoPrompt("Problems that would prevent Release activation exist, continue?", false) {
+			log.Fatal("Release aborted.")
+		}
 	}
 
 	if envSnapName == "" && r.cfg.Flags.CreateVirtEnv {
