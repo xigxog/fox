@@ -13,7 +13,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.18.2
 	// TODO set to released version
-	github.com/xigxog/kubefox v0.3.0-alpha.0.20231222013818-ec6ca1f71533
+	github.com/xigxog/kubefox v0.3.0-alpha.0.20240102204538-8bb182b07c5b
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.29.0
 	k8s.io/apimachinery v0.29.0
