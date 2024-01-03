@@ -8,6 +8,7 @@ __debug_bin*
 # Build output
 bin/
 release/
+tools/
 
 # Misc
 workstation/

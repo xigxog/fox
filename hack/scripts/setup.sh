@@ -6,7 +6,9 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." &>/dev/null && pwd -P)"
 cd "${REPO_ROOT}"
 
 SCRIPTS="hack/scripts"
+
 KUBEFOX_SRC=${KUBEFOX_SRC:-"../kubefox"}
+TOOLS_DIR="tools"
 
 COMPONENT="fox"
 COMPONENT_COMMIT=$(git rev-parse HEAD)
@@ -25,6 +27,8 @@ export GO111MODULE=on
 export CGO_ENABLED=0
 export GOARCH=amd64
 export GOOS=${GOOS:-"linux"}
+export GOBIN="${REPO_ROOT}/${TOOLS_DIR}"
+export PATH="${PATH}:${GOBIN}"
 
 BIN="fox"
 TAR="${BIN}-$(basename ${TAG_REF:-$HEAD_REF})-${GOOS}-${GOARCH}.tar.gz"

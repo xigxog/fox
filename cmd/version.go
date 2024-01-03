@@ -1,15 +1,21 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
 	"runtime/debug"
-	"strconv"
 
 	"github.com/spf13/cobra"
 	"github.com/xigxog/fox/internal/log"
 )
+
+// XXX Update this before making release. This is hardcoded to ensure that
+// the correct version is shown when Fox is setup using `go install`.
+const version = "v0.7.0-alpha"
+
+type BuildInfo struct {
+	Version   string `json:"version,omitempty"`
+	Commit    string `json:"commit,omitempty"`
+	BuildDate string `json:"buildDate,omitempty"`
+}
 
 var verCmd = &cobra.Command{
 	Use:   "version",
@@ -22,30 +28,21 @@ func init() {
 }
 
 func runVer(cmd *cobra.Command, args []string) {
-	var (
-		version, commit, date string
-		modified              bool = true
-	)
+	var commit, buildDate string
 	if info, ok := debug.ReadBuildInfo(); ok {
-		version = info.Main.Version
 		for _, s := range info.Settings {
 			switch s.Key {
 			case "vcs.revision":
 				commit = s.Value
 			case "vcs.time":
-				date = s.Value
-			case "vcs.modified":
-				modified, _ = strconv.ParseBool(s.Value)
+				buildDate = s.Value
 			}
 		}
 	}
 
-	if modified {
-		log.Verbose("binary built from source with uncommitted changes")
-	}
-	log.Marshal(map[string]any{
-		"version": version,
-		"commit":  commit,
-		"date":    date,
+	log.Marshal(&BuildInfo{
+		Version:   version,
+		Commit:    commit,
+		BuildDate: buildDate,
 	})
 }
