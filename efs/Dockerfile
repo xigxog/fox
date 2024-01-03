@@ -20,8 +20,6 @@ ARG TAG_REF
 
 WORKDIR /app
 
-# TODO deal nested app repos
-
 # Cache dependencies.
 COPY ${APP_YAML} go.mo[d] go.su[m] ./
 RUN go mod download || true
