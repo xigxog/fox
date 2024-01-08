@@ -17,16 +17,16 @@ import (
 )
 
 var releaseCmd = &cobra.Command{
-	Use:    "release (NAME | COMMIT | SHORT COMMIT | VERSION | TAG | BRANCH)",
+	Use:    "release <NAME | COMMIT | SHORT COMMIT | VERSION | TAG | BRANCH>",
 	Args:   cobra.ExactArgs(1),
 	PreRun: setup,
 	Run:    release,
-	Short:  "Release specified AppDeployment and VirtualEnv",
+	Short:  "Release specified AppDeployment and VirtualEnvironment",
 	Long: strings.TrimSpace(`
 The release command activates the routes of the components belonging to the 
 specified AppDeployment. This causes genesis events matching components' routes
-to be automatically sent to the component with the specified environment being 
-injected.
+to be automatically sent to the component with the specified VirtualEnvironment
+being injected.
 
 The AppDeployment can be identified by its name, commit, short-commit (first 7 
 characters), version, Git tag, or Git branch. 🦊 Fox will inspect the Kubernetes
@@ -38,14 +38,15 @@ found you will be prompted to select the desired AppDeployment.
 fox release main --virtual-env dev
 
 # Release the AppDeployment with version 'v1.2.3' using the 'prod' 
-# VirtualEnv, creating an VirtualEnvSnapshot if needed.
+# VirtualEnvironment, creating an DataSnapshot if needed.
 fox release v1.2.3 --virtual-env prod --create-snapshot
 `),
 }
 
 func init() {
-	releaseCmd.Flags().StringVarP(&cfg.Flags.VirtEnv, "virtual-env", "e", "", "name of VirtualEnv or VirtualEnvSnapshot to use")
-	releaseCmd.Flags().BoolVarP(&cfg.Flags.CreateVirtEnv, "create-snapshot", "c", false, "create an immutable snapshot of environment and use for release")
+	releaseCmd.Flags().StringVarP(&cfg.Flags.VirtEnv, "virtual-env", "e", "", "name of VirtualEnvironment to use for Release")
+	releaseCmd.Flags().StringVarP(&cfg.Flags.Snapshot, "snapshot", "d", "", "name of DataSnapshot to use for Release")
+	releaseCmd.Flags().BoolVarP(&cfg.Flags.CreateSnapshot, "create-snapshot", "c", false, "create an immutable snapshot of VirtualEnvironment data and use for Release")
 
 	addCommonDeployFlags(releaseCmd)
 

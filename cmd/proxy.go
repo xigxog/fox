@@ -18,7 +18,7 @@ import (
 )
 
 var proxyCmd = &cobra.Command{
-	Use:    "proxy (PORT)",
+	Use:    "proxy <PORT>",
 	Args:   cobra.ExactArgs(1),
 	PreRun: setup,
 	Run:    runProxy,

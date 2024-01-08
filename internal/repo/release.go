@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (r *repo) Release(appDepId string) *v1alpha1.VirtualEnv {
+func (r *repo) Release(appDepId string) *v1alpha1.VirtualEnvironment {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
@@ -35,22 +35,19 @@ func (r *repo) Release(appDepId string) *v1alpha1.VirtualEnv {
 		log.Fatal("Error finding AppDeployment: %v", err)
 	}
 
-	var envSnapName string
-	envSnap := &v1alpha1.VirtualEnvSnapshot{}
-	err = r.k8s.Get(ctx, k8s.Key(platform.Namespace, r.cfg.Flags.VirtEnv), envSnap)
-	if k8s.IgnoreNotFound(err) != nil {
-		log.Fatal("Error getting VirtualEnvSnapshot: %v", err)
+	ve := &v1alpha1.VirtualEnvironment{}
+	if err := r.k8s.Get(ctx, k8s.Key(platform.Namespace, r.cfg.Flags.VirtEnv), ve); err != nil {
+		log.Fatal("Error getting VirtualEnvironment: %v", err)
 	}
+	origVE := ve.DeepCopy()
 
-	if k8s.IsNotFound(err) {
-		if envSnap, err = r.k8s.SnapshotVirtualEnv(ctx, platform.Namespace, r.cfg.Flags.VirtEnv); err != nil {
-			log.Fatal("Error getting VirtualEnv: %v", err)
-		}
-	} else {
-		envSnapName = envSnap.Name
+	env := &v1alpha1.Environment{}
+	if err := r.k8s.Get(ctx, k8s.Key("", ve.Spec.Environment), env); err != nil {
+		log.Fatal("Error getting Environment: %v", err)
 	}
+	ve.Merge(env)
 
-	problems, err := appDep.Validate(envSnap.Data, func(name string, typ api.ComponentType) (api.Adapter, error) {
+	problems, err := appDep.Validate(&ve.Data, func(name string, typ api.ComponentType) (api.Adapter, error) {
 		switch typ {
 		case api.ComponentTypeHTTPAdapter:
 			a := &v1alpha1.HTTPAdapter{}
@@ -73,38 +70,33 @@ func (r *repo) Release(appDepId string) *v1alpha1.VirtualEnv {
 		}
 	}
 
-	if envSnapName == "" && r.cfg.Flags.CreateVirtEnv {
-		if envSnapName, err = r.createEnvSnapshot(ctx, envSnap); err != nil {
-			log.Fatal("Error creating VirtualEnvSnapshot: %v", err)
+	snapName := r.cfg.Flags.Snapshot
+	if snapName == "" && r.cfg.Flags.CreateSnapshot {
+		if snapName, err = r.createDataSnapshot(ctx, ve); err != nil {
+			log.Fatal("Error creating DataSnapshot: %v", err)
+		}
+	} else if snapName != "" {
+		snap := &v1alpha1.DataSnapshot{}
+		if err := r.k8s.Get(ctx, k8s.Key(platform.Namespace, snapName), snap); err != nil {
+			log.Fatal("Error getting DataSnapshot: %v", err)
 		}
 	}
 
-	env := &v1alpha1.VirtualEnv{
-		TypeMeta: v1.TypeMeta{
-			APIVersion: v1alpha1.GroupVersion.Identifier(),
-			Kind:       "VirtualEnv",
+	updatedVE := origVE.DeepCopy()
+	updatedVE.Spec.Release = &v1alpha1.Release{
+		AppDeployment: v1alpha1.ReleaseAppDeployment{
+			Name:    appDep.Name,
+			Version: appDep.Spec.Version,
 		},
-		ObjectMeta: v1.ObjectMeta{
-			Name:      envSnap.Spec.Source.Name,
-			Namespace: platform.Namespace,
-		},
-		Spec: v1alpha1.VirtualEnvSpec{
-			Release: &v1alpha1.Release{
-				AppDeployment: v1alpha1.ReleaseAppDeployment{
-					Name:    appDep.Name,
-					Version: appDep.Spec.Version,
-				},
-				VirtualEnvSnapshot: envSnapName,
-			},
-		},
+		DataSnapshot: snapName,
 	}
-	if err := r.k8s.Apply(ctx, env); err != nil {
-		log.Fatal("Error updating VirtualEnv with Release: %v", err)
+	if err := r.k8s.Merge(ctx, updatedVE, origVE); err != nil {
+		log.Fatal("Error updating Release: %v", err)
 	}
 
 	r.waitForReady(platform, &appDep.Spec)
 
-	return env
+	return updatedVE
 }
 
 func (r *repo) findAppDep(ctx context.Context, platform *v1alpha1.Platform, appDepId string) (*v1alpha1.AppDeployment, error) {
@@ -168,29 +160,51 @@ func (r *repo) pickAppDep(appDepList *v1alpha1.AppDeploymentList) *v1alpha1.AppD
 	return selected
 }
 
-func (r *repo) createEnvSnapshot(ctx context.Context, env *v1alpha1.VirtualEnvSnapshot) (string, error) {
-	log.Verbose("checking for existing VirtualEnvSnapshot of VirtualEnv '%s' with resourceVersion '%s'",
-		env.Spec.Source.Name, env.Spec.Source.ResourceVersion)
+func (r *repo) createDataSnapshot(ctx context.Context, ve *v1alpha1.VirtualEnvironment) (string, error) {
+	log.Verbose("checking for existing DataSnapshot of VirtualEnvironment '%s' with resourceVersion '%s'",
+		ve.Name, ve.ResourceVersion)
 
-	list := &v1alpha1.VirtualEnvSnapshotList{}
+	list := &v1alpha1.DataSnapshotList{}
 	if err := r.k8s.List(ctx, list, client.MatchingLabels{
-		api.LabelK8sVirtualEnv:            env.Name,
-		api.LabelK8sSourceResourceVersion: env.ResourceVersion,
+		api.LabelK8sSourceKind:    string(api.DataSourceKindVirtualEnvironment),
+		api.LabelK8sSourceName:    ve.Name,
+		api.LabelK8sSourceVersion: ve.ResourceVersion,
 	}); err != nil {
 		return "", err
 	}
+	dataSource := v1alpha1.DataSource{
+		Kind:            api.DataSourceKindVirtualEnvironment,
+		Name:            ve.Name,
+		ResourceVersion: ve.ResourceVersion,
+		DataChecksum:    ve.GetDataChecksum(),
+	}
+
 	for _, s := range list.Items {
 		// Double check source is equal.
-		if s.Spec.Source == env.Spec.Source {
-			log.Verbose("found existing snapshot '%s'", list.Items[0].Name)
+		if s.Spec.Source == dataSource {
+			log.Verbose("found existing snapshot '%s'", s.Name)
 			return s.Name, nil
 		}
 	}
 
-	log.VerboseMarshal(env, "creating VirtualEnvSnapshot")
-	if err := r.k8s.Create(ctx, env); err != nil {
+	log.VerboseMarshal(ve, "creating DataSnapshot")
+	dataSnap := &v1alpha1.DataSnapshot{
+		TypeMeta: v1.TypeMeta{
+			APIVersion: v1alpha1.GroupVersion.Identifier(),
+			Kind:       "DataSnapshot",
+		},
+		ObjectMeta: v1.ObjectMeta{
+			Namespace: ve.Namespace,
+			Name: fmt.Sprintf("%s-%s-%s",
+				ve.Name, ve.ResourceVersion, time.Now().UTC().Format("20060102-150405")),
+		},
+		Spec: v1alpha1.DataSnapshotSpec{
+			Source: dataSource,
+		},
+	}
+	if err := r.k8s.Create(ctx, dataSnap); err != nil {
 		return "", err
 	}
 
-	return env.Name, nil
+	return dataSnap.Name, nil
 }

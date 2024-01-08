@@ -17,7 +17,7 @@ import (
 
 // XXX Update this before making release. This is hardcoded to ensure that
 // the correct version is shown when Fox is setup using `go install`.
-const version = "v0.7.0-alpha"
+const version = "v0.8.0-alpha"
 
 type BuildInfo struct {
 	Version   string `json:"version,omitempty"`
