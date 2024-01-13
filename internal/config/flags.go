@@ -27,15 +27,13 @@ type Flags struct {
 	Platform      string
 	Version       string
 	VirtEnv       string
-	Snapshot      string
 
-	CreateSnapshot bool
-	CreateTag      bool
-	ForceBuild     bool
-	NoCache        bool
-	PushImage      bool
-	Quickstart     bool
-	SkipDeploy     bool
+	CreateTag  bool
+	ForceBuild bool
+	NoCache    bool
+	PushImage  bool
+	Quickstart bool
+	SkipDeploy bool
 
 	WaitTime time.Duration
 }

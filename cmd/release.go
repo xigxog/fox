@@ -38,15 +38,13 @@ found you will be prompted to select the desired AppDeployment.
 fox release main --virtual-env dev
 
 # Release the AppDeployment with version 'v1.2.3' using the 'prod' 
-# VirtualEnvironment, creating an DataSnapshot if needed.
-fox release v1.2.3 --virtual-env prod --create-snapshot
+# VirtualEnvironment.
+fox release v1.2.3 --virtual-env prod
 `),
 }
 
 func init() {
 	releaseCmd.Flags().StringVarP(&cfg.Flags.VirtEnv, "virtual-env", "e", "", "name of VirtualEnvironment to use for Release")
-	releaseCmd.Flags().StringVarP(&cfg.Flags.Snapshot, "snapshot", "d", "", "name of DataSnapshot to use for Release")
-	releaseCmd.Flags().BoolVarP(&cfg.Flags.CreateSnapshot, "create-snapshot", "c", false, "create an immutable snapshot of VirtualEnvironment data and use for Release")
 
 	addCommonDeployFlags(releaseCmd)
 
