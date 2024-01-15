@@ -39,7 +39,7 @@ export GOBIN="${REPO_ROOT}/${TOOLS_DIR}"
 export PATH="${PATH}:${GOBIN}"
 
 BIN="fox"
-TAR="${BIN}-$(basename ${TAG_REF:-$HEAD_REF})-${GOOS}-${GOARCH}.tar.gz"
+TAR="${BIN}-${GOOS}-${GOARCH}.tar.gz"
 BUILD_OUT_ROOT="bin"
 BUILD_OUT="${BUILD_OUT_ROOT}/${GOOS}"
 RELEASE_OUT="release"
