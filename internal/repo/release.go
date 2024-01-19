@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/xigxog/fox/internal/log"
 	"github.com/xigxog/fox/internal/utils"
 	"github.com/xigxog/kubefox/api"
@@ -44,19 +45,20 @@ func (r *repo) Release(appDepId string) *v1alpha1.VirtualEnvironment {
 		log.Fatal("Error getting Environment: %v", err)
 	}
 
-	problems, err := appDep.Validate(ve.Data.MergeInto(&env.Data), func(name string, typ api.ComponentType) (api.Adapter, error) {
-		switch typ {
-		case api.ComponentTypeHTTPAdapter:
-			a := &v1alpha1.HTTPAdapter{}
-			if err := r.k8s.Get(ctx, k8s.Key(appDep.Namespace, name), a); err != nil {
-				return nil, err
-			}
-			return a, nil
+	problems, err := appDep.Spec.Validate(appDep, ve.Data.MergeInto(&env.Data),
+		func(name string, typ api.ComponentType) (api.Adapter, error) {
+			switch typ {
+			case api.ComponentTypeHTTPAdapter:
+				a := &v1alpha1.HTTPAdapter{}
+				if err := r.k8s.Get(ctx, k8s.Key(appDep.Namespace, name), a); err != nil {
+					return nil, err
+				}
+				return a, nil
 
-		default:
-			return nil, core.ErrNotFound()
-		}
-	})
+			default:
+				return nil, core.ErrNotFound()
+			}
+		})
 	if err != nil {
 		log.Fatal("Error validating Release: %v", err)
 	}
@@ -71,6 +73,8 @@ func (r *repo) Release(appDepId string) *v1alpha1.VirtualEnvironment {
 	if ve.Spec.Release == nil {
 		ve.Spec.Release = &v1alpha1.Release{}
 	}
+	ve.Spec.Release.Id = uuid.NewString()
+
 	if ve.Spec.Release.Apps == nil {
 		ve.Spec.Release.Apps = map[string]v1alpha1.ReleaseApp{}
 	}

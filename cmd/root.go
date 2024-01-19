@@ -56,6 +56,8 @@ func initViper(cmd *cobra.Command, args []string) {
 	})
 }
 
+// TODO add command to apply Env/VirtEnv.
+
 func Execute() {
 	defer log.Logger().Sync()
 
