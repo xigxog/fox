@@ -81,8 +81,9 @@ type Kind struct {
 }
 
 type ContainerRegistry struct {
-	Address string `json:"address" validate:"required"`
-	Token   string `json:"token"`
+	Address  string `json:"address" validate:"required"`
+	Token    string `json:"token"`
+	Username string `json:"username"`
 }
 
 func (cfg *Config) IsRegistryLocal() bool {
@@ -202,6 +203,7 @@ func (cfg *Config) setupRegistry() {
 		log.Info("Remote registry information provided. Setting the remote registry %s", cfg.Flags.RegistryAddress)
 		cfg.ContainerRegistry.Address = cfg.Flags.RegistryAddress
 		cfg.ContainerRegistry.Token = cfg.Flags.RegistryToken
+		cfg.ContainerRegistry.Username = cfg.Flags.RegistryUsername
 		return
 	}
 	log.Info("If you don't already have a container registry 🦊 Fox can help setup the")
@@ -215,7 +217,8 @@ func (cfg *Config) setupRegistry() {
 	log.Info("🦊 Fox just needs to know which container registry to use. Please be")
 	log.Info("sure you have permissions to pull and push images to the registry.")
 	cfg.ContainerRegistry.Address = utils.InputPrompt("Enter the container registry endpoint you'd like to use", "", true)
-	cfg.ContainerRegistry.Token = utils.InputPrompt("Enter the container registry access token", "", false)
+	cfg.ContainerRegistry.Username = utils.InputPrompt("Enter the container registry username (if required)", "", false)
+	cfg.ContainerRegistry.Token = utils.InputPrompt("Enter the container registry access token or password", "", true)
 	return
 }
 
