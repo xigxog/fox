@@ -16,6 +16,3 @@ metadata:
   name: qa
 spec:
   environment: qa
-data:
-  secrets:
-    this: thisisatest

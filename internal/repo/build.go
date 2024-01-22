@@ -94,7 +94,6 @@ func (r *repo) Build(compDirName string) string {
 		log.Fatal("Error creating container tar: %v", err)
 	}
 	labels := map[string]string{
-		api.LabelOCIApp:       r.app.Name,
 		api.LabelOCIComponent: compName,
 		api.LabelOCICreated:   now,
 		api.LabelOCIRevision:  compCommit,

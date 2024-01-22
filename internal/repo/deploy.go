@@ -156,9 +156,9 @@ func (r *repo) buildAppDep() *v1alpha1.AppDeployment {
 		log.Fatal("Error listing components dir '%s': %v", r.ComponentsDir(), err)
 	}
 	commit := r.GetCommit("")
-	reg := fmt.Sprintf("%s/%s", r.cfg.ContainerRegistry.Address, r.app.Name)
-	if r.app.ContainerRegistry != "" {
-		reg = r.app.ContainerRegistry
+	reg := r.app.ContainerRegistry
+	if reg == "" {
+		reg = r.cfg.ContainerRegistry.Address
 	}
 
 	appDep := &v1alpha1.AppDeployment{

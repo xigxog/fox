@@ -139,7 +139,7 @@ func (r *repo) GetCompImageFromDir(compDirName string) string {
 }
 
 func (r *repo) GetCompImage(name, commit string) string {
-	return fmt.Sprintf("%s/%s/%s:%s", r.cfg.ContainerRegistry.Address, r.app.Name, name, commit)
+	return fmt.Sprintf("%s/%s:%s", r.cfg.ContainerRegistry.Address, name, commit)
 }
 
 func (r *repo) GetRepoURL() string {
@@ -246,6 +246,10 @@ func (r *repo) ComponentRepoSubpath(comp string) string {
 }
 
 func (r *repo) IsClean() bool {
+	if os.Getenv("FOX_DRAGON_IGNORE_UNCOMMITTED") == "true" {
+		return true
+	}
+
 	w, err := r.gitRepo.Worktree()
 	if err != nil {
 		log.Fatal("Error accessing git worktree: %v", err)

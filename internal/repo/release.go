@@ -34,18 +34,16 @@ func (r *repo) Release(appDepId string) *v1alpha1.VirtualEnvironment {
 	if err != nil {
 		log.Fatal("Error finding AppDeployment: %v", err)
 	}
-
 	ve := &v1alpha1.VirtualEnvironment{}
 	if err := r.k8s.Get(ctx, k8s.Key(platform.Namespace, r.cfg.Flags.VirtEnv), ve); err != nil {
 		log.Fatal("Error getting VirtualEnvironment: %v", err)
 	}
-
 	env := &v1alpha1.Environment{}
 	if err := r.k8s.Get(ctx, k8s.Key("", ve.Spec.Environment), env); err != nil {
 		log.Fatal("Error getting Environment: %v", err)
 	}
 
-	problems, err := appDep.Spec.Validate(appDep, ve.Data.MergeInto(&env.Data),
+	problems, err := appDep.Validate(ve.Data.MergeInto(&env.Data),
 		func(name string, typ api.ComponentType) (api.Adapter, error) {
 			switch typ {
 			case api.ComponentTypeHTTPAdapter:
