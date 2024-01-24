@@ -234,8 +234,8 @@ github.com/subosito/gotenv v1.6.0 h1:9NlTDc1FTs4qu0DDq7AEtTPNw6SVm7uBMsUCUjABIf8
 github.com/subosito/gotenv v1.6.0/go.mod h1:Dk4QP5c2W3ibzajGcXpNraDfq2IrhjMIvMSWPKKo0FU=
 github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=
 github.com/xanzy/ssh-agent v0.3.3/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI1Bc68Uw=
-github.com/xigxog/kubefox v0.4.0-alpha.0.20240122171618-f572b27afaea h1:+ZvwUaXzjAIKISp5zCkvMjy1MJZ0atCFFVDQaehDlu8=
-github.com/xigxog/kubefox v0.4.0-alpha.0.20240122171618-f572b27afaea/go.mod h1:yAM9kmrDh2o+ynzpKsLavRwYrS36L5MYBmUxXjYrjIw=
+github.com/xigxog/kubefox v0.4.0-alpha.0.20240124182404-4c4bc88a5b9f h1:V5SPccuSGVuj6bEsrAKowRZoH/qhtD0K5+9Vh681kF8=
+github.com/xigxog/kubefox v0.4.0-alpha.0.20240124182404-4c4bc88a5b9f/go.mod h1:yAM9kmrDh2o+ynzpKsLavRwYrS36L5MYBmUxXjYrjIw=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=

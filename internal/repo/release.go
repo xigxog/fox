@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/xigxog/fox/internal/log"
 	"github.com/xigxog/fox/internal/utils"
 	"github.com/xigxog/kubefox/api"
@@ -71,7 +70,6 @@ func (r *repo) Release(appDepId string) *v1alpha1.VirtualEnvironment {
 	if ve.Spec.Release == nil {
 		ve.Spec.Release = &v1alpha1.Release{}
 	}
-	ve.Spec.Release.Id = uuid.NewString()
 
 	if ve.Spec.Release.Apps == nil {
 		ve.Spec.Release.Apps = map[string]v1alpha1.ReleaseApp{}
