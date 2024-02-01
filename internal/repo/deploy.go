@@ -23,6 +23,7 @@ import (
 	foxutils "github.com/xigxog/fox/internal/utils"
 	"github.com/xigxog/kubefox/api"
 	"github.com/xigxog/kubefox/api/kubernetes/v1alpha1"
+	"github.com/xigxog/kubefox/k8s"
 	"github.com/xigxog/kubefox/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,8 +51,6 @@ func (r *repo) Deploy(skipImageCheck bool) *v1alpha1.AppDeployment {
 		}
 	}
 
-	log.Info("n: %s, ad: %s, v: %s, appName: %s", name, r.cfg.Flags.AppDeployment, r.cfg.Flags.Version, r.app.Name)
-
 	p, appDep := r.prepareDeployment(skipImageCheck)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
@@ -71,6 +70,11 @@ func (r *repo) Deploy(skipImageCheck bool) *v1alpha1.AppDeployment {
 	}
 
 	r.waitForReady(p, &appDep.Spec)
+
+	// Get updated status.
+	if err := r.k8s.Get(ctx, k8s.Key(appDep.Namespace, appDep.Name), appDep); err != nil {
+		log.Fatal("Error getting updated AppDeployment: %v", err)
+	}
 
 	return appDep
 }
@@ -271,6 +275,8 @@ func (r *repo) extractCompDef(compName string, comp *api.ComponentDefinition) er
 
 func (r *repo) waitForReady(p *v1alpha1.Platform, spec *v1alpha1.AppDeploymentSpec) {
 	if r.cfg.Flags.WaitTime <= 0 || r.cfg.Flags.DryRun {
+		// Add small delay to allow resource status updates.
+		time.Sleep(time.Second)
 		return
 	}
 

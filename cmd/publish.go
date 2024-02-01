@@ -49,10 +49,12 @@ func runPublish(cmd *cobra.Command, args []string) error {
 		checkCommonDeployFlags()
 	}
 
-	r := repo.New(cfg)
-	d := r.Publish()
+	d := repo.New(cfg).Publish()
+
 	// Makes output less cluttered.
+	d.Annotations = nil
 	d.ManagedFields = nil
+
 	log.Marshal(d)
 
 	return nil

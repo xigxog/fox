@@ -12,7 +12,7 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.18.2
-	github.com/xigxog/kubefox v0.4.0-alpha.0.20240131193148-d4e9ca5702dc
+	github.com/xigxog/kubefox v0.4.0-alpha.0.20240201172225-6ca281a7189a
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.29.1
 	k8s.io/apimachinery v0.29.1

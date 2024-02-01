@@ -57,7 +57,9 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	d := repo.New(cfg).Deploy(false)
 
 	// Makes output less cluttered.
+	d.Annotations = nil
 	d.ManagedFields = nil
+
 	log.Marshal(d)
 
 	return nil

@@ -60,6 +60,8 @@ func release(cmd *cobra.Command, args []string) {
 	env := repo.New(cfg).Release(appDepId)
 
 	// Makes output less cluttered.
+	env.Annotations = nil
 	env.ManagedFields = nil
+
 	log.Marshal(env)
 }

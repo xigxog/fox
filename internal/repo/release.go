@@ -21,6 +21,7 @@ import (
 	"github.com/xigxog/kubefox/api/kubernetes/v1alpha1"
 	"github.com/xigxog/kubefox/core"
 	"github.com/xigxog/kubefox/k8s"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -83,6 +84,16 @@ func (r *repo) Release(appDepId string) *v1alpha1.VirtualEnvironment {
 	}
 
 	r.waitForReady(platform, &appDep.Spec)
+
+	// Get updated status.
+	if err := r.k8s.Get(ctx, k8s.Key(ve.Namespace, ve.Name), ve); err != nil {
+		log.Fatal("Error getting updated VirtualEnvironment: %v", err)
+	}
+
+	ve.TypeMeta = metav1.TypeMeta{
+		Kind:       "VirtualEnvironment",
+		APIVersion: v1alpha1.GroupVersion.Identifier(),
+	}
 
 	return ve
 }
