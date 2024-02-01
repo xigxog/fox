@@ -28,10 +28,29 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (r *repo) Deploy(name string, skipImageCheck bool) *v1alpha1.AppDeployment {
+func (r *repo) Deploy(skipImageCheck bool) *v1alpha1.AppDeployment {
 	if r.cfg.Flags.CreateTag && !strings.HasSuffix(r.GetTagRef(), r.cfg.Flags.Version) {
 		r.CreateTag(r.cfg.Flags.Version)
 	}
+
+	var name string
+	switch {
+	case r.cfg.Flags.AppDeployment != "":
+		name = r.cfg.Flags.AppDeployment
+	case r.cfg.Flags.Version != "":
+		name = utils.CleanName(fmt.Sprintf("%s-%s", r.app.Name, utils.CleanName(r.cfg.Flags.Version)))
+	default:
+		switch {
+		case r.GetTagRef() != "":
+			name = utils.CleanName(fmt.Sprintf("%s-%s", r.app.Name, utils.CleanName(r.GetTagRef())))
+		case r.GetHeadRef() != "":
+			name = utils.CleanName(fmt.Sprintf("%s-%s", r.app.Name, utils.CleanName(r.GetHeadRef())))
+		default:
+			name = utils.CleanName(fmt.Sprintf("%s-%s", r.app.Name, r.GetRootCommit()))
+		}
+	}
+
+	log.Info("n: %s, ad: %s, v: %s, appName: %s", name, r.cfg.Flags.AppDeployment, r.cfg.Flags.Version, r.app.Name)
 
 	p, appDep := r.prepareDeployment(skipImageCheck)
 
@@ -56,7 +75,7 @@ func (r *repo) Deploy(name string, skipImageCheck bool) *v1alpha1.AppDeployment 
 	return appDep
 }
 
-func (r *repo) Publish(deployName string) *v1alpha1.AppDeployment {
+func (r *repo) Publish() *v1alpha1.AppDeployment {
 	compsDir, err := os.ReadDir(r.ComponentsDir())
 	if err != nil {
 		log.Fatal("Error listing components dir '%s': %v", r.ComponentsDir(), err)
@@ -70,8 +89,8 @@ func (r *repo) Publish(deployName string) *v1alpha1.AppDeployment {
 		log.InfoNewline()
 	}
 
-	if !r.cfg.Flags.SkipDeploy && deployName != "" {
-		return r.Deploy(deployName, true)
+	if !r.cfg.Flags.SkipDeploy {
+		return r.Deploy(true)
 	}
 
 	return nil
@@ -134,7 +153,7 @@ func (r *repo) prepareDeployment(skipImageCheck bool) (*v1alpha1.Platform, *v1al
 			log.Info("push them to the container registry before continuing with the operation.")
 			if foxutils.YesNoPrompt("Missing component images, would you like to publish them?", true) {
 				log.InfoNewline()
-				r.Publish("")
+				r.Publish()
 			} else {
 				log.Fatal("There are one or more missing component images.")
 			}

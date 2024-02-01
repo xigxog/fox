@@ -17,6 +17,7 @@ import (
 	"github.com/xigxog/fox/internal/log"
 	"github.com/xigxog/fox/internal/utils"
 	"github.com/xigxog/kubefox/api"
+	common "github.com/xigxog/kubefox/api/kubernetes"
 	"github.com/xigxog/kubefox/api/kubernetes/v1alpha1"
 	"github.com/xigxog/kubefox/core"
 	"github.com/xigxog/kubefox/k8s"
@@ -41,16 +42,14 @@ func (r *repo) Release(appDepId string) *v1alpha1.VirtualEnvironment {
 	if err := r.k8s.Get(ctx, k8s.Key("", ve.Spec.Environment), env); err != nil {
 		log.Fatal("Error getting Environment: %v", err)
 	}
+	ve.Data.Import(&env.Data)
 
-	problems, err := appDep.Validate(ve.Data.MergeInto(&env.Data),
-		func(name string, typ api.ComponentType) (api.Adapter, error) {
+	problems, err := appDep.Validate(&ve.Data,
+		func(name string, typ api.ComponentType) (common.Adapter, error) {
 			switch typ {
 			case api.ComponentTypeHTTPAdapter:
 				a := &v1alpha1.HTTPAdapter{}
-				if err := r.k8s.Get(ctx, k8s.Key(appDep.Namespace, name), a); err != nil {
-					return nil, err
-				}
-				return a, nil
+				return a, r.k8s.Get(ctx, k8s.Key(appDep.Namespace, name), a)
 
 			default:
 				return nil, core.ErrNotFound()

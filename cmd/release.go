@@ -54,10 +54,10 @@ func init() {
 }
 
 func release(cmd *cobra.Command, args []string) {
-	appDep := args[0]
-	checkCommonDeployFlags(cfg.Flags.VirtEnv)
+	appDepId := args[0]
+	checkCommonDeployFlags()
 
-	env := repo.New(cfg).Release(appDep)
+	env := repo.New(cfg).Release(appDepId)
 
 	// Makes output less cluttered.
 	env.ManagedFields = nil
