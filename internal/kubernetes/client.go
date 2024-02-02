@@ -253,13 +253,13 @@ func (c *Client) CreatePlatform(namespace, name string) *v1alpha1.Platform {
 
 func (c *Client) WaitPlatformReady(ctx context.Context, p *v1alpha1.Platform, spec *v1alpha1.AppDeploymentSpec) {
 	log.Info("Waiting for KubeFox Platform '%s' to be ready...", p.Name)
-	if err := c.WaitPodReady(ctx, p, "nats", ""); err != nil {
+	if err := c.WaitPodReady(ctx, p, api.PlatformComponentNATS, ""); err != nil {
 		log.Fatal("Error while waiting: %v", err)
 	}
-	if err := c.WaitPodReady(ctx, p, "broker", ""); err != nil {
+	if err := c.WaitPodReady(ctx, p, api.PlatformComponentBroker, ""); err != nil {
 		log.Fatal("Error while waiting: %v", err)
 	}
-	if err := c.WaitPodReady(ctx, p, "httpsrv", ""); err != nil {
+	if err := c.WaitPodReady(ctx, p, api.PlatformComponentHTTPSrv, ""); err != nil {
 		log.Fatal("Error while waiting: %v", err)
 	}
 

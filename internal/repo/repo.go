@@ -139,7 +139,7 @@ func (r *repo) GetCompImageFromDir(compDirName string) string {
 }
 
 func (r *repo) GetCompImage(name, commit string) string {
-	return fmt.Sprintf("%s/%s:%s", r.cfg.ContainerRegistry.Address, name, commit)
+	return fmt.Sprintf("%s/%s/%s:%s", r.cfg.ContainerRegistry.Address, r.app.Name, name, commit)
 }
 
 func (r *repo) GetRepoURL() string {
