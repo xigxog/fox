@@ -44,7 +44,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.RegistryAddress, "registry-address", "", "", `address of your container registry`)
 	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.RegistryToken, "registry-token", "", "", `access token for your container registry`)
 	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.RegistryUsername, "registry-username", "", "", `username for your container registry`)
-	rootCmd.MarkFlagsRequiredTogether("registry-address", "registry-token")
 }
 
 func initViper(cmd *cobra.Command, args []string) {

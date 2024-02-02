@@ -100,7 +100,11 @@ func (cfg *Config) Load() {
 	log.Verbose("Loading Kubefox config from '%s'", cfg.path)
 
 	b, err := os.ReadFile(cfg.path)
-	if errors.Is(err, fs.ErrNotExist) {
+	if cfg.Flags.Quickstart {
+		cfg.setupRegistry()
+		log.InfoNewline()
+		cfg.done()
+	} else if errors.Is(err, fs.ErrNotExist) {
 		log.Info("It looks like this is the first time you are using 🦊 Fox. Welcome!")
 		log.InfoNewline()
 		log.Info("🦊 Fox needs some information from you to configure itself. The setup process only")
@@ -199,7 +203,7 @@ func (cfg *Config) setupKind(name string) {
 }
 
 func (cfg *Config) setupRegistry() {
-	if cfg.Flags.RegistryAddress != "" && cfg.Flags.RegistryToken != "" {
+	if cfg.Flags.RegistryAddress != "" {
 		log.Info("Remote registry information provided. Setting the remote registry %s", cfg.Flags.RegistryAddress)
 		cfg.ContainerRegistry.Address = cfg.Flags.RegistryAddress
 		cfg.ContainerRegistry.Token = cfg.Flags.RegistryToken
