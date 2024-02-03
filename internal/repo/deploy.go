@@ -76,6 +76,11 @@ func (r *repo) Deploy(skipImageCheck bool) *v1alpha1.AppDeployment {
 		log.Fatal("Error getting updated AppDeployment: %v", err)
 	}
 
+	appDep.TypeMeta = metav1.TypeMeta{
+		APIVersion: v1alpha1.GroupVersion.Identifier(),
+		Kind:       "AppDeployment",
+	}
+
 	return appDep
 }
 
@@ -277,6 +282,7 @@ func (r *repo) waitForReady(p *v1alpha1.Platform, spec *v1alpha1.AppDeploymentSp
 	if r.cfg.Flags.WaitTime <= 0 || r.cfg.Flags.DryRun {
 		// Add small delay to allow resource status updates.
 		time.Sleep(time.Second)
+		log.InfoNewline()
 		return
 	}
 
