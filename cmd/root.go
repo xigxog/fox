@@ -41,6 +41,9 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.OutFormat, "output", "o", "yaml", `output format, one of ["json", "yaml"]`)
 	rootCmd.PersistentFlags().BoolVarP(&cfg.Flags.Info, "info", "i", false, "enable info output")
 	rootCmd.PersistentFlags().BoolVarP(&cfg.Flags.Verbose, "verbose", "v", false, "enable verbose output")
+	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.RegistryAddress, "registry-address", "", "", `address of your container registry`)
+	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.RegistryToken, "registry-token", "", "", `access token for your container registry`)
+	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.RegistryUsername, "registry-username", "", "", `username for your container registry`)
 }
 
 func initViper(cmd *cobra.Command, args []string) {

@@ -215,8 +215,12 @@ func (r *repo) GetRegAuth() string {
 	if r.cfg.GitHub.Token != "" {
 		token = r.cfg.GitHub.Token
 	}
+	user := r.cfg.ContainerRegistry.Username
+	if user == "" {
+		user = "kubefox"
+	}
 	authCfg, _ := json.Marshal(registry.AuthConfig{
-		Username: "kubefox",
+		Username: user,
 		Password: token,
 	})
 

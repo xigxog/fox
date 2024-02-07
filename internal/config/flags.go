@@ -20,13 +20,16 @@ type Flags struct {
 	Verbose bool
 
 	// flags used by subcommands
-	AppDeployment string
-	Builder       string
-	Kind          string
-	Namespace     string
-	Platform      string
-	Version       string
-	VirtEnv       string
+	AppDeployment    string
+	Builder          string
+	Kind             string
+	Namespace        string
+	Platform         string
+	Version          string
+	VirtEnv          string
+	RegistryAddress  string
+	RegistryUsername string
+	RegistryToken    string
 
 	CreateTag  bool
 	ForceBuild bool
