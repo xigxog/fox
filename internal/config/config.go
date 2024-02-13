@@ -23,6 +23,7 @@ import (
 	"github.com/cli/oauth/device"
 	"github.com/xigxog/fox/internal/log"
 	"github.com/xigxog/fox/internal/utils"
+	kfutils "github.com/xigxog/kubefox/utils"
 	"sigs.k8s.io/yaml"
 )
 
@@ -87,7 +88,15 @@ type ContainerRegistry struct {
 }
 
 func (cfg *Config) IsRegistryLocal() bool {
-	return strings.HasPrefix(cfg.ContainerRegistry.Address, LocalRegistry)
+	return strings.HasPrefix(cfg.GetContainerRegistry().Address, LocalRegistry)
+}
+
+func (cfg *Config) GetContainerRegistry() ContainerRegistry {
+	return ContainerRegistry{
+		Address:  kfutils.First(cfg.Flags.RegistryAddress, cfg.ContainerRegistry.Address),
+		Token:    kfutils.First(cfg.Flags.RegistryToken, cfg.ContainerRegistry.Token),
+		Username: kfutils.First(cfg.Flags.RegistryUsername, cfg.ContainerRegistry.Username),
+	}
 }
 
 func (cfg *Config) Load() {
@@ -234,7 +243,6 @@ func (cfg *Config) setupRegistry() {
 	cfg.ContainerRegistry.Address = utils.InputPrompt("Enter the container registry endpoint you'd like to use", "", true)
 	cfg.ContainerRegistry.Username = utils.InputPrompt("Enter the container registry username (if required)", "", false)
 	cfg.ContainerRegistry.Token = utils.InputPrompt("Enter the container registry access token or password", "", true)
-	return
 }
 
 func (cfg *Config) setupGitHub() {

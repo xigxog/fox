@@ -12,24 +12,24 @@ import "time"
 
 type Flags struct {
 	// persistent flags defined in root command
-	AppPath   string
-	OutFormat string
+	AppPath          string
+	OutFormat        string
+	RegistryAddress  string
+	RegistryToken    string
+	RegistryUsername string
 
 	DryRun  bool
 	Info    bool
 	Verbose bool
 
 	// flags used by subcommands
-	AppDeployment    string
-	Builder          string
-	Kind             string
-	Namespace        string
-	Platform         string
-	Version          string
-	VirtEnv          string
-	RegistryAddress  string
-	RegistryUsername string
-	RegistryToken    string
+	AppDeployment string
+	Builder       string
+	Kind          string
+	Namespace     string
+	Platform      string
+	Version       string
+	VirtEnv       string
 
 	CreateTag  bool
 	ForceBuild bool

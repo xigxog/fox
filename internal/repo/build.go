@@ -185,6 +185,10 @@ func (r *repo) IsImageLocal(img string) bool {
 }
 
 func (r *repo) KindLoad(img string) {
+	if !r.cfg.IsRegistryLocal() {
+		return
+	}
+
 	kind := r.cfg.Flags.Kind
 	if kind == "" && r.cfg.Kind.AlwaysLoad {
 		kind = r.cfg.Kind.ClusterName
@@ -211,11 +215,11 @@ func (r *repo) KindLoad(img string) {
 }
 
 func (r *repo) GetRegAuth() string {
-	token := r.cfg.ContainerRegistry.Token
+	token := r.cfg.GetContainerRegistry().Token
 	if r.cfg.GitHub.Token != "" {
 		token = r.cfg.GitHub.Token
 	}
-	user := r.cfg.ContainerRegistry.Username
+	user := r.cfg.GetContainerRegistry().Username
 	if user == "" {
 		user = "kubefox"
 	}

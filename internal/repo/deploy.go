@@ -106,8 +106,8 @@ func (r *repo) Publish() *v1alpha1.AppDeployment {
 }
 
 func (r *repo) applyIPS(ctx context.Context, p *v1alpha1.Platform, spec *v1alpha1.AppDeploymentSpec) {
-	if r.cfg.ContainerRegistry.Token != "" {
-		cr := r.cfg.ContainerRegistry
+	cr := r.cfg.GetContainerRegistry()
+	if cr.Token != "" {
 		name := fmt.Sprintf("%s-image-pull-secret", spec.AppName)
 		dockerCfg := fmt.Sprintf(`{"auths":{"%s":{"username":"%s","password":"%s"}}}`, cr.Address, cr.Username, cr.Token)
 
@@ -186,7 +186,7 @@ func (r *repo) buildAppDep() *v1alpha1.AppDeployment {
 	commit := r.GetCommit("")
 	reg := r.app.ContainerRegistry
 	if reg == "" {
-		reg = r.cfg.ContainerRegistry.Address
+		reg = r.cfg.GetContainerRegistry().Address
 	}
 
 	appDep := &v1alpha1.AppDeployment{
