@@ -9,7 +9,11 @@
 package repo
 
 import (
+	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,6 +37,9 @@ type repo struct {
 	gitRepo *git.Repository
 	k8s     *kubernetes.Client
 	docker  *docker.Client
+
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 type App struct {
@@ -65,12 +72,16 @@ func New(cfg *config.Config) *repo {
 		log.Fatal("Error creating Docker client: %v", err)
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.Flags.Timeout)
+
 	return &repo{
 		cfg:     cfg,
 		app:     app,
 		gitRepo: gitRepo,
 		k8s:     kubernetes.NewClient(cfg),
 		docker:  d,
+		ctx:     ctx,
+		cancel:  cancel,
 	}
 }
 
@@ -120,6 +131,10 @@ func (r *repo) CommitAll(msg string) string {
 }
 
 func (r *repo) CreateTag(tag string) *plumbing.Reference {
+	if filepath.Base(r.GetTagRef()) == "tag" {
+		log.Info("Tag '%s' for commot '%s' exists.", tag)
+	}
+
 	log.Info("Creating tag '%s'.", tag)
 	h, err := r.gitRepo.Head()
 	if err != nil {
@@ -134,8 +149,8 @@ func (r *repo) CreateTag(tag string) *plumbing.Reference {
 
 func (r *repo) GetCompImageFromDir(compDirName string) string {
 	name := utils.CleanName(compDirName)
-	commit := r.GetCompCommit(compDirName)
-	return r.GetCompImage(name, commit.Hash.String())
+	commit := r.GetCompHash(compDirName)
+	return r.GetCompImage(name, commit)
 }
 
 func (r *repo) GetCompImage(name, commit string) string {
@@ -184,11 +199,37 @@ func (r *repo) GetTagRef() string {
 	return refName
 }
 
-func (r *repo) GetCompCommit(compDirName string) *object.Commit {
-	return r.GetCommit(r.ComponentRepoSubpath(compDirName))
+func (r *repo) GetCompHash(compDirName string) string {
+	h := md5.New()
+
+	err := filepath.Walk(r.ComponentRepoSubpath(compDirName),
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			if !info.IsDir() {
+				f, err := os.Open(path)
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+
+				if _, err := io.Copy(h, f); err != nil {
+					return err
+				}
+			}
+
+			return nil
+		})
+	if err != nil {
+		log.Fatal("Error generating Component hash: %v", err)
+	}
+
+	return hex.EncodeToString(h.Sum(nil))
 }
 
-func (r *repo) GetRootCommit() string {
+func (r *repo) GetCommit() *object.Commit {
 	if !r.IsClean() {
 		log.Fatal("Error finding commit hash: uncommitted changes present")
 	}
@@ -196,33 +237,13 @@ func (r *repo) GetRootCommit() string {
 	if err != nil {
 		log.Fatal("Error opening head ref of git repo: %v", err)
 	}
-	return head.Hash().String()
-}
 
-func (r *repo) GetCommit(path string) *object.Commit {
-	if !r.IsClean() {
-		log.Fatal("Error finding commit hash: uncommitted changes present")
-	}
-
-	subPath := foxutils.Subpath(path, r.cfg.RepoPath)
-	iter, err := r.gitRepo.Log(&git.LogOptions{
-		PathFilter: func(c string) bool {
-			return strings.HasPrefix(c, subPath)
-		},
-	})
+	c, err := r.gitRepo.CommitObject(head.Hash())
 	if err != nil {
-		log.Fatal("Error finding commit hash for path '%s': %v", subPath, err)
+		log.Fatal("Error getting commit '%s' for head ref of git repo: %v", head.Hash().String(), err)
 	}
 
-	commit, err := iter.Next()
-	if err != nil {
-		log.Fatal("Error finding commit hash for path '%s': %v", subPath, err)
-	}
-	if commit == nil {
-		log.Fatal("Error finding commit hash for path '%s': no commits have been made", subPath)
-	}
-
-	return commit
+	return c
 }
 
 func (r *repo) AppYAMLBuildSubpath() string {

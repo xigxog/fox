@@ -28,6 +28,7 @@ func init() {
 	deployCmd.Flags().StringVarP(&cfg.Flags.AppDeployment, "name", "d", "", `name to use for AppDeployment, defaults to <APP NAME>-<VERSION | GIT REF | GIT COMMIT>`)
 	deployCmd.Flags().StringVarP(&cfg.Flags.Version, "version", "s", "", "version to assign to the AppDeployment, making it immutable")
 	deployCmd.Flags().BoolVarP(&cfg.Flags.CreateTag, "create-tag", "t", false, `create Git tag using the AppDeployment version`)
+	deployCmd.Flags().BoolVarP(&cfg.Flags.Generate, "generate", "g", false, `only generate AppDeployment and exit`)
 	addCommonDeployFlags(deployCmd)
 	rootCmd.AddCommand(deployCmd)
 }

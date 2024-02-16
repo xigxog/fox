@@ -12,6 +12,8 @@ import "time"
 
 type Flags struct {
 	// persistent flags defined in root command
+	Timeout time.Duration
+
 	AppPath          string
 	OutFormat        string
 	RegistryAddress  string
@@ -33,6 +35,7 @@ type Flags struct {
 
 	CreateTag  bool
 	ForceBuild bool
+	Generate   bool
 	NoCache    bool
 	PushImage  bool
 	Quickstart bool

@@ -121,7 +121,7 @@ func (c *Client) ListPlatforms(ctx context.Context) ([]v1alpha1.Platform, error)
 	return pList.Items, nil
 }
 
-func (c *Client) GetPlatform() *v1alpha1.Platform {
+func (c *Client) GetPlatform(ctx context.Context) *v1alpha1.Platform {
 	nn := client.ObjectKey{
 		Namespace: c.cfg.Flags.Namespace,
 		Name:      c.cfg.Flags.Platform,
@@ -134,15 +134,12 @@ func (c *Client) GetPlatform() *v1alpha1.Platform {
 
 	platform := &v1alpha1.Platform{}
 	if nn.Name == "" {
-		platform = c.pickPlatform()
+		platform = c.pickPlatform(ctx)
 
 	} else {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-		defer cancel()
-
 		if err := c.Get(ctx, nn, platform); err != nil {
 			if apierrors.IsNotFound(err) {
-				platform = c.pickPlatform()
+				platform = c.pickPlatform(ctx)
 			} else {
 				log.Fatal("Unable to get KubeFox Platform: %v", err)
 			}
@@ -152,10 +149,7 @@ func (c *Client) GetPlatform() *v1alpha1.Platform {
 	return platform
 }
 
-func (c *Client) pickPlatform() *v1alpha1.Platform {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
+func (c *Client) pickPlatform(ctx context.Context) *v1alpha1.Platform {
 	pList, err := c.ListPlatforms(ctx)
 	if err != nil {
 		log.Fatal("%v", err)
@@ -171,7 +165,7 @@ func (c *Client) pickPlatform() *v1alpha1.Platform {
 		log.Info("You need to have a KubeFox Platform instance running to deploy your components.")
 		log.Info("Don't worry, 🦊 Fox can create one for you.")
 		if utils.YesNoPrompt("Would you like to create a KubeFox Platform?", true) {
-			return c.createPlatformPrompt()
+			return c.createPlatformPrompt(ctx)
 		} else {
 			log.Fatal("Error you must create a KubeFox Platform before deploying components.")
 		}
@@ -188,11 +182,11 @@ func (c *Client) pickPlatform() *v1alpha1.Platform {
 	fmt.Scanln(&input)
 	i, err := strconv.Atoi(input)
 	if err != nil {
-		return c.pickPlatform()
+		return c.pickPlatform(ctx)
 	}
 	i = i - 1
 	if i < 0 || i >= len(pList) {
-		return c.pickPlatform()
+		return c.pickPlatform(ctx)
 	}
 
 	p := &pList[i]
@@ -208,19 +202,16 @@ func (c *Client) pickPlatform() *v1alpha1.Platform {
 	return p
 }
 
-func (c *Client) createPlatformPrompt() *v1alpha1.Platform {
+func (c *Client) createPlatformPrompt(ctx context.Context) *v1alpha1.Platform {
 	name := utils.NamePrompt("KubeFox Platform", "", true)
 	namespace := utils.InputPrompt("Enter the Kubernetes namespace of the KubeFox Platform",
 		fmt.Sprintf("kubefox-%s", name), true)
 	log.InfoNewline()
 
-	return c.CreatePlatform(namespace, name)
+	return c.CreatePlatform(ctx, namespace, name)
 }
 
-func (c *Client) CreatePlatform(namespace, name string) *v1alpha1.Platform {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
+func (c *Client) CreatePlatform(ctx context.Context, namespace, name string) *v1alpha1.Platform {
 	ns := &corev1.Namespace{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: corev1.SchemeGroupVersion.Identifier(),
@@ -251,7 +242,14 @@ func (c *Client) CreatePlatform(namespace, name string) *v1alpha1.Platform {
 	return p
 }
 
-func (c *Client) WaitPlatformReady(ctx context.Context, p *v1alpha1.Platform, spec *v1alpha1.AppDeploymentSpec) {
+func (c *Client) WaitPlatformReady(waitTime time.Duration, p *v1alpha1.Platform, spec *v1alpha1.AppDeploymentSpec) {
+	if waitTime <= 0 {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), waitTime)
+	defer cancel()
+
 	log.Info("Waiting for KubeFox Platform '%s' to be ready...", p.Name)
 	if err := c.WaitPodReady(ctx, p, api.PlatformComponentNATS, ""); err != nil {
 		log.Fatal("Error while waiting: %v", err)
@@ -266,7 +264,7 @@ func (c *Client) WaitPlatformReady(ctx context.Context, p *v1alpha1.Platform, sp
 	if spec != nil {
 		for n, comp := range spec.Components {
 			log.Info("Waiting for component '%s' to be ready...", n)
-			if err := c.WaitPodReady(ctx, p, n, comp.Commit); err != nil {
+			if err := c.WaitPodReady(ctx, p, n, comp.Hash); err != nil {
 				log.Fatal("Error while waiting: %v", err)
 			}
 		}

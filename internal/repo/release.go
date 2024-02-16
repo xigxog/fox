@@ -12,7 +12,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/xigxog/fox/internal/log"
 	"github.com/xigxog/fox/internal/utils"
@@ -26,21 +25,19 @@ import (
 )
 
 func (r *repo) Release(appDepId string) *v1alpha1.VirtualEnvironment {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
 
-	platform := r.k8s.GetPlatform()
+	platform := r.k8s.GetPlatform(r.ctx)
 
-	appDep, err := r.findAppDep(ctx, platform, appDepId)
+	appDep, err := r.findAppDep(r.ctx, platform, appDepId)
 	if err != nil {
 		log.Fatal("Error finding AppDeployment: %v", err)
 	}
 	ve := &v1alpha1.VirtualEnvironment{}
-	if err := r.k8s.Get(ctx, k8s.Key(platform.Namespace, r.cfg.Flags.VirtEnv), ve); err != nil {
+	if err := r.k8s.Get(r.ctx, k8s.Key(platform.Namespace, r.cfg.Flags.VirtEnv), ve); err != nil {
 		log.Fatal("Error getting VirtualEnvironment: %v", err)
 	}
 	env := &v1alpha1.Environment{}
-	if err := r.k8s.Get(ctx, k8s.Key("", ve.Spec.Environment), env); err != nil {
+	if err := r.k8s.Get(r.ctx, k8s.Key("", ve.Spec.Environment), env); err != nil {
 		log.Fatal("Error getting Environment: %v", err)
 	}
 	ve.Data.Import(&env.Data)
@@ -50,7 +47,7 @@ func (r *repo) Release(appDepId string) *v1alpha1.VirtualEnvironment {
 			switch typ {
 			case api.ComponentTypeHTTPAdapter:
 				a := &v1alpha1.HTTPAdapter{}
-				return a, r.k8s.Get(ctx, k8s.Key(appDep.Namespace, name), a)
+				return a, r.k8s.Get(r.ctx, k8s.Key(appDep.Namespace, name), a)
 
 			default:
 				return nil, core.ErrNotFound()
@@ -79,14 +76,14 @@ func (r *repo) Release(appDepId string) *v1alpha1.VirtualEnvironment {
 		Version:       appDep.Spec.Version,
 	}
 
-	if err := r.k8s.Merge(ctx, ve, origVE); err != nil {
+	if err := r.k8s.Merge(r.ctx, ve, origVE); err != nil {
 		log.Fatal("Error updating Release: %v", err)
 	}
 
 	r.waitForReady(platform, &appDep.Spec)
 
 	// Get updated status.
-	if err := r.k8s.Get(ctx, k8s.Key(ve.Namespace, ve.Name), ve); err != nil {
+	if err := r.k8s.Get(r.ctx, k8s.Key(ve.Namespace, ve.Name), ve); err != nil {
 		log.Fatal("Error getting updated VirtualEnvironment: %v", err)
 	}
 

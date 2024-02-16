@@ -36,21 +36,20 @@ import (
 func Init(cfg *config.Config) {
 	initApp(cfg)
 
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.Flags.Timeout)
+	defer cancel()
+
 	if cfg.Flags.Quickstart {
 		c := kubernetes.NewClient(cfg)
-		p := c.CreatePlatform("kubefox-demo", "demo")
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
-		defer cancel()
-
-		c.WaitPlatformReady(ctx, p, nil)
+		p := c.CreatePlatform(ctx, "kubefox-demo", "demo")
+		c.WaitPlatformReady(time.Minute*5, p, nil)
 
 		log.Info("KubeFox initialized for the quickstart guide!")
 
 	} else {
 		log.InfoNewline()
 		// Creates new platform if none exist.
-		kubernetes.NewClient(cfg).GetPlatform()
+		kubernetes.NewClient(cfg).GetPlatform(ctx)
 		log.Info("KubeFox App initialization complete!")
 	}
 }

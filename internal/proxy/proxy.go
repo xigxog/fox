@@ -125,7 +125,7 @@ func (srv *ProxyServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (srv *ProxyServer) Shutdown() {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
 	if srv.httpSrv != nil {
@@ -139,11 +139,16 @@ func (srv *ProxyServer) Shutdown() {
 }
 
 func (srv *ProxyServer) startPortForward(cfg *config.Config) *kubernetes.PortForward {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	t := cfg.Flags.Timeout
+	if cfg.Flags.WaitTime > t {
+		t = cfg.Flags.WaitTime
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), t)
 	defer cancel()
 
 	c := kubernetes.NewClient(cfg)
-	p := c.GetPlatform()
+	p := c.GetPlatform(ctx)
 
 	pfReq := &kubernetes.PortForwardRequest{
 		Namespace: p.Namespace,
@@ -153,9 +158,6 @@ func (srv *ProxyServer) startPortForward(cfg *config.Config) *kubernetes.PortFor
 	if errors.Is(err, kubernetes.ErrComponentNotReady) && cfg.Flags.WaitTime > 0 {
 		log.Warn("No httpsrv pod is available.")
 		log.Info("Waiting for httpsrv pod to become available...")
-
-		ctx, cancel := context.WithTimeout(context.Background(), cfg.Flags.WaitTime)
-		defer cancel()
 
 		err = c.WaitPodReady(ctx, p, "httpsrv", "")
 		if err == nil {

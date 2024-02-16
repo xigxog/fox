@@ -10,6 +10,7 @@ package cmd
 
 import (
 	"strings"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
@@ -41,6 +42,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.OutFormat, "output", "o", "yaml", `output format, one of ["json", "yaml"]`)
 	rootCmd.PersistentFlags().BoolVarP(&cfg.Flags.Info, "info", "i", false, "enable info output")
 	rootCmd.PersistentFlags().BoolVarP(&cfg.Flags.Verbose, "verbose", "v", false, "enable verbose output")
+	rootCmd.PersistentFlags().DurationVarP(&cfg.Flags.Timeout, "timeout", "m", time.Minute*5, `timeout for command`)
+
 	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.RegistryAddress, "registry-address", "", "", `address of your container registry`)
 	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.RegistryToken, "registry-token", "", "", `access token for your container registry`)
 	rootCmd.PersistentFlags().StringVarP(&cfg.Flags.RegistryUsername, "registry-username", "", "", `username for your container registry`)

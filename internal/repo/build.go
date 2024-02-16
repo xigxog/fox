@@ -52,11 +52,10 @@ func (r *repo) Build(compDirName string) string {
 	appYaml := r.AppYAMLBuildSubpath()
 	compName := utils.CleanName(compDirName)
 	compDir := r.ComponentBuildSubpath(compDirName)
-	compCommit := r.GetCompCommit(compDirName).Hash.String()
-	rootCommit := r.GetRootCommit()
+	compCommit := r.GetCompHash(compDirName)
+	rootCommit := r.GetCommit().Hash.String()
 	headRef := r.GetHeadRef()
 	tagRef := r.GetTagRef()
-	regAuth := r.GetRegAuth()
 	now := time.Now().Format(time.RFC3339)
 
 	buildArgs := map[string]*string{
@@ -74,7 +73,10 @@ func (r *repo) Build(compDirName string) string {
 	if !(r.cfg.Flags.ForceBuild || r.cfg.Flags.NoCache) {
 		if found, _ := r.DoesImageExists(img, false); found {
 			log.Info("Component image '%s' exists, skipping build.", img)
-			r.KindLoad(img)
+			if r.cfg.Flags.PushImage {
+				r.PushImage(img)
+			}
+
 			return img
 		}
 	}
@@ -100,10 +102,7 @@ func (r *repo) Build(compDirName string) string {
 		api.LabelOCISource:    r.GetRepoURL(),
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
-	defer cancel()
-
-	buildResp, err := r.docker.ImageBuild(ctx, dfi, types.ImageBuildOptions{
+	buildResp, err := r.docker.ImageBuild(r.ctx, dfi, types.ImageBuildOptions{
 		Dockerfile: injectedDockerfile,
 		NoCache:    r.cfg.Flags.NoCache,
 		Remove:     true,
@@ -116,22 +115,10 @@ func (r *repo) Build(compDirName string) string {
 	}
 	logResp(buildResp.Body, true)
 
-	if r.cfg.IsRegistryLocal() {
-		log.Verbose("Local registry is set, container image push will be skipped.")
-	}
-	if r.cfg.Flags.PushImage && !r.cfg.IsRegistryLocal() {
-		log.Info("Pushing component image '%s'.", img)
-
-		pushResp, err := r.docker.ImagePush(ctx, img, types.ImagePushOptions{
-			RegistryAuth: regAuth,
-		})
-		if err != nil {
-			log.Fatal("Error pushing container image: %v", err)
-		}
-		logResp(pushResp, true)
+	if r.cfg.Flags.PushImage {
+		r.PushImage(img)
 	}
 
-	r.KindLoad(img)
 	return img
 }
 
@@ -145,7 +132,7 @@ func (r *repo) DoesImageExists(img string, pull bool) (bool, error) {
 		return found, nil
 	}
 
-	if di, err := r.docker.DistributionInspect(context.Background(), img, r.GetRegAuth()); err != nil {
+	if di, err := r.docker.DistributionInspect(r.ctx, img, r.GetRegAuth()); err != nil {
 		log.Verbose("%s", err)
 		return false, err
 
@@ -153,7 +140,7 @@ func (r *repo) DoesImageExists(img string, pull bool) (bool, error) {
 		log.Verbose("Digest: %s", di.Descriptor.Digest)
 
 		if pull && !r.IsImageLocal(img) {
-			pullResp, err := r.docker.ImagePull(context.Background(), img, types.ImagePullOptions{
+			pullResp, err := r.docker.ImagePull(r.ctx, img, types.ImagePullOptions{
 				RegistryAuth: r.GetRegAuth(),
 			})
 			if err != nil {
@@ -184,8 +171,29 @@ func (r *repo) IsImageLocal(img string) bool {
 	return found
 }
 
-func (r *repo) KindLoad(img string) {
+func (r *repo) PushImage(img string) {
+	if r.cfg.Flags.Generate {
+		return
+	}
+
 	if !r.cfg.IsRegistryLocal() {
+		log.Info("Pushing component image to registry '%s'.", img)
+
+		pushResp, err := r.docker.ImagePush(r.ctx, img, types.ImagePushOptions{
+			RegistryAuth: r.GetRegAuth(),
+		})
+		if err != nil {
+			log.Fatal("Error pushing container image: %v", err)
+		}
+
+		logResp(pushResp, true)
+	}
+
+	r.PushKind(img)
+}
+
+func (r *repo) PushKind(img string) {
+	if r.cfg.Flags.Generate {
 		return
 	}
 

@@ -14,10 +14,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/xigxog/fox/internal/log"
 	foxutils "github.com/xigxog/fox/internal/utils"
@@ -30,10 +30,6 @@ import (
 )
 
 func (r *repo) Deploy(skipImageCheck bool) *v1alpha1.AppDeployment {
-	if r.cfg.Flags.CreateTag && !strings.HasSuffix(r.GetTagRef(), r.cfg.Flags.Version) {
-		r.CreateTag(r.cfg.Flags.Version)
-	}
-
 	var name string
 	switch {
 	case r.cfg.Flags.AppDeployment != "":
@@ -42,37 +38,42 @@ func (r *repo) Deploy(skipImageCheck bool) *v1alpha1.AppDeployment {
 		name = utils.CleanName(fmt.Sprintf("%s-%s", r.app.Name, utils.CleanName(r.cfg.Flags.Version)))
 	default:
 		switch {
-		case r.GetTagRef() != "":
-			name = utils.CleanName(fmt.Sprintf("%s-%s", r.app.Name, utils.CleanName(r.GetTagRef())))
 		case r.GetHeadRef() != "":
 			name = utils.CleanName(fmt.Sprintf("%s-%s", r.app.Name, utils.CleanName(r.GetHeadRef())))
+		case r.GetTagRef() != "":
+			name = utils.CleanName(fmt.Sprintf("%s-%s", r.app.Name, utils.CleanName(r.GetTagRef())))
 		default:
-			name = utils.CleanName(fmt.Sprintf("%s-%s", r.app.Name, r.GetRootCommit()))
+			name = utils.CleanName(fmt.Sprintf("%s-%s", r.app.Name, r.GetCommit().Hash.String()))
 		}
 	}
 
-	p, appDep := r.prepareDeployment(skipImageCheck)
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
-	r.applyIPS(ctx, p, &appDep.Spec)
-
-	appDep.ObjectMeta = metav1.ObjectMeta{
-		Namespace: p.Namespace,
-		Name:      name,
+	if r.cfg.Flags.CreateTag && !strings.HasSuffix(r.GetTagRef(), r.cfg.Flags.Version) {
+		r.CreateTag(r.cfg.Flags.Version)
 	}
+
+	appDep := r.prepareDeployment(skipImageCheck)
+	appDep.ObjectMeta.Name = name
+
+	// Check if only need to generate AppDeployment.
+	if r.cfg.Flags.Generate {
+		return appDep
+	}
+
+	p := r.k8s.GetPlatform(r.ctx)
+	appDep.ObjectMeta.Namespace = p.Namespace
+
+	r.applyIPS(r.ctx, p, &appDep.Spec)
 
 	log.VerboseMarshal(appDep, "AppDeployment:")
 
-	if err := r.k8s.Merge(ctx, appDep, nil); err != nil {
+	if err := r.k8s.Merge(r.ctx, appDep, nil); err != nil {
 		log.Fatal("%v", err)
 	}
 
 	r.waitForReady(p, &appDep.Spec)
 
 	// Get updated status.
-	if err := r.k8s.Get(ctx, k8s.Key(appDep.Namespace, appDep.Name), appDep); err != nil {
+	if err := r.k8s.Get(r.ctx, k8s.Key(appDep.Namespace, appDep.Name), appDep); err != nil {
 		log.Fatal("Error getting updated AppDeployment: %v", err)
 	}
 
@@ -137,19 +138,16 @@ func (r *repo) applyIPS(ctx context.Context, p *v1alpha1.Platform, spec *v1alpha
 // prepareDeployment pulls the Platform, generates the AppDeploymentSpec and
 // ensures all images exist. If there are any issues it will prompt the user to
 // correct them.
-func (r *repo) prepareDeployment(skipImageCheck bool) (*v1alpha1.Platform, *v1alpha1.AppDeployment) {
+func (r *repo) prepareDeployment(skipImageCheck bool) *v1alpha1.AppDeployment {
 	appDep := r.buildAppDep()
-	platform := r.k8s.GetPlatform()
 
 	if !skipImageCheck {
 		allFound := true
 		for n, c := range appDep.Spec.Components {
-			img := r.GetCompImage(n, c.Commit)
+			img := r.GetCompImage(n, c.Hash)
 			if found, _ := r.DoesImageExists(img, false); found {
 				log.Info("Component image '%s' exists.", img)
-				if r.cfg.IsRegistryLocal() {
-					r.KindLoad(img)
-				}
+				r.PushKind(img)
 			} else {
 				log.Warn("Component image '%s' does not exist.", img)
 				allFound = false
@@ -158,9 +156,9 @@ func (r *repo) prepareDeployment(skipImageCheck bool) (*v1alpha1.Platform, *v1al
 		}
 
 		if !allFound {
-			log.Info("There are one or more missing component images. 🦊 Fox will need to build and")
-			log.Info("push them to the container registry before continuing with the operation.")
-			if foxutils.YesNoPrompt("Missing component images, would you like to publish them?", true) {
+			log.Info("There are one or more missing component images. 🦊 Fox will need to build them")
+			log.Info("before continuing with the operation.")
+			if foxutils.YesNoPrompt("Missing component images, would you like to build them?", true) {
 				log.InfoNewline()
 				r.Publish()
 			} else {
@@ -175,7 +173,7 @@ func (r *repo) prepareDeployment(skipImageCheck bool) (*v1alpha1.Platform, *v1al
 		}
 	}
 
-	return platform, appDep
+	return appDep
 }
 
 func (r *repo) buildAppDep() *v1alpha1.AppDeployment {
@@ -183,7 +181,7 @@ func (r *repo) buildAppDep() *v1alpha1.AppDeployment {
 	if err != nil {
 		log.Fatal("Error listing components dir '%s': %v", r.ComponentsDir(), err)
 	}
-	commit := r.GetCommit("")
+	commit := r.GetCommit()
 	reg := r.app.ContainerRegistry
 	if reg == "" {
 		reg = r.cfg.GetContainerRegistry().Address
@@ -200,8 +198,8 @@ func (r *repo) buildAppDep() *v1alpha1.AppDeployment {
 			CommitTime:        metav1.NewTime(commit.Committer.When),
 			Version:           r.cfg.Flags.Version,
 			RepoURL:           r.GetRepoURL(),
-			Branch:            r.GetHeadRef(),
-			Tag:               r.GetTagRef(),
+			Branch:            filepath.Base(r.GetHeadRef()),
+			Tag:               filepath.Base(r.GetTagRef()),
 			ContainerRegistry: reg,
 			Components:        map[string]*api.ComponentDefinition{},
 		},
@@ -219,7 +217,7 @@ func (r *repo) buildAppDep() *v1alpha1.AppDeployment {
 		}
 		compName := utils.CleanName(compDir.Name())
 		appDep.Spec.Components[compName] = &api.ComponentDefinition{
-			Commit: r.GetCompCommit(compDir.Name()).Hash.String(),
+			Hash: r.GetCompHash(compDir.Name()),
 		}
 	}
 
@@ -227,13 +225,10 @@ func (r *repo) buildAppDep() *v1alpha1.AppDeployment {
 }
 
 func (r *repo) extractCompDef(compName string, comp *api.ComponentDefinition) error {
-	commit := comp.Commit
-	img := r.GetCompImage(compName, comp.Commit)
+	commit := comp.Hash
+	img := r.GetCompImage(compName, comp.Hash)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
-	defer cancel()
-
-	resp, err := r.docker.ContainerCreate(ctx, &container.Config{
+	resp, err := r.docker.ContainerCreate(r.ctx, &container.Config{
 		Image: img,
 		Cmd:   []string{"-export"},
 		Tty:   true,
@@ -243,16 +238,16 @@ func (r *repo) extractCompDef(compName string, comp *api.ComponentDefinition) er
 	}
 
 	defer func() {
-		if err := r.docker.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{}); err != nil {
+		if err := r.docker.ContainerRemove(r.ctx, resp.ID, container.RemoveOptions{}); err != nil {
 			log.Error("Error removing component container: %v", err)
 		}
 	}()
 
-	if err := r.docker.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+	if err := r.docker.ContainerStart(r.ctx, resp.ID, container.StartOptions{}); err != nil {
 		return err
 	}
 
-	statusCh, errCh := r.docker.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
+	statusCh, errCh := r.docker.ContainerWait(r.ctx, resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {
@@ -261,7 +256,7 @@ func (r *repo) extractCompDef(compName string, comp *api.ComponentDefinition) er
 	case <-statusCh:
 	}
 
-	out, err := r.docker.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
+	out, err := r.docker.ContainerLogs(r.ctx, resp.ID, container.LogsOptions{ShowStdout: true})
 	if err != nil {
 		return err
 	}
@@ -273,22 +268,22 @@ func (r *repo) extractCompDef(compName string, comp *api.ComponentDefinition) er
 	if err := json.Unmarshal(b, comp); err != nil {
 		return err
 	}
-	comp.Commit = commit
+	comp.Hash = commit
 
 	return nil
 }
 
 func (r *repo) waitForReady(p *v1alpha1.Platform, spec *v1alpha1.AppDeploymentSpec) {
-	if r.cfg.Flags.WaitTime <= 0 || r.cfg.Flags.DryRun {
+	if r.cfg.Flags.DryRun {
+		return
+	}
+	if r.cfg.Flags.WaitTime <= 0 {
 		// Add small delay to allow resource status updates.
 		time.Sleep(time.Second)
 		log.InfoNewline()
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), r.cfg.Flags.WaitTime)
-	defer cancel()
-
-	r.k8s.WaitPlatformReady(ctx, p, spec)
+	r.k8s.WaitPlatformReady(r.cfg.Flags.WaitTime, p, spec)
 	log.InfoNewline()
 }
