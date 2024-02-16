@@ -2,7 +2,7 @@ module github.com/xigxog/kubefox/quickstart
 
 go 1.21
 
-require github.com/xigxog/kubefox v0.5.0
+require github.com/xigxog/kubefox v0.5.1
 
 require (
 	github.com/golang/protobuf v1.5.3 // indirect
