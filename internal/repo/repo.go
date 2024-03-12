@@ -149,12 +149,12 @@ func (r *repo) CreateTag(tag string) *plumbing.Reference {
 
 func (r *repo) GetCompImageFromDir(compDirName string) string {
 	name := utils.CleanName(compDirName)
-	commit := r.GetCompHash(compDirName)
-	return r.GetCompImage(name, commit)
+	hash := r.GetCompHash(compDirName)
+	return r.GetCompImage(name, hash)
 }
 
-func (r *repo) GetCompImage(name, commit string) string {
-	return fmt.Sprintf("%s/%s/%s:%s", r.cfg.GetContainerRegistry().Address, r.app.Name, name, commit)
+func (r *repo) GetCompImage(name, hash string) string {
+	return fmt.Sprintf("%s/%s/%s:%s", r.cfg.GetContainerRegistry().Address, r.app.Name, name, hash)
 }
 
 func (r *repo) GetRepoURL() string {
@@ -202,13 +202,14 @@ func (r *repo) GetTagRef() string {
 func (r *repo) GetCompHash(compDirName string) string {
 	h := md5.New()
 
-	err := filepath.Walk(r.ComponentRepoSubpath(compDirName),
+	err := filepath.Walk(r.ComponentDir(compDirName),
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
 
 			if !info.IsDir() {
+				// compPath := foxutils.Subpath(path, r.cfg.RepoPath)
 				f, err := os.Open(path)
 				if err != nil {
 					return err

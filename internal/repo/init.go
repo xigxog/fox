@@ -59,7 +59,7 @@ func initApp(cfg *config.Config) {
 
 	if cfg.Flags.Quickstart {
 		initDir(efs.HelloWorldPath, cfg.AppPath)
-		initGit(cfg.RepoPath, &App{}, cfg)
+		initGit(cfg.RepoPath, cfg)
 		return
 	}
 
@@ -72,7 +72,7 @@ func initApp(cfg *config.Config) {
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		log.VerboseMarshal(app, "App definition:")
 		log.Info("A valid KubeFox App definition already exists.")
-		initGit(cfg.RepoPath, app, cfg)
+		initGit(cfg.RepoPath, cfg)
 		return
 	}
 
@@ -83,7 +83,7 @@ func initApp(cfg *config.Config) {
 	log.Info("includes two components and example environments for testing.")
 	if foxutils.YesNoPrompt("Would you like to initialize the 'hello-world' KubeFox App?", false) {
 		initDir(efs.HelloWorldPath, cfg.AppPath)
-		initGit(cfg.RepoPath, app, cfg)
+		initGit(cfg.RepoPath, cfg)
 		return
 	}
 	log.InfoNewline()
@@ -97,10 +97,10 @@ func initApp(cfg *config.Config) {
 	app.Description = foxutils.InputPrompt("Enter the KubeFox App's description", "", false)
 
 	WriteApp(cfg.AppPath, app)
-	initGit(cfg.RepoPath, app, cfg)
+	initGit(cfg.RepoPath, cfg)
 }
 
-func initGit(repoPath string, app *App, cfg *config.Config) {
+func initGit(repoPath string, cfg *config.Config) {
 	wt := osfs.New(repoPath)
 	dot, _ := wt.Chroot(git.GitDirName)
 	s := filesystem.NewStorage(dot, cache.NewObjectLRUDefault())

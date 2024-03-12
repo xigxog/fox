@@ -52,21 +52,21 @@ func (r *repo) Build(compDirName string) string {
 	appYaml := r.AppYAMLBuildSubpath()
 	compName := utils.CleanName(compDirName)
 	compDir := r.ComponentBuildSubpath(compDirName)
-	compCommit := r.GetCompHash(compDirName)
+	compHash := r.GetCompHash(compDirName)
 	rootCommit := r.GetCommit().Hash.String()
 	headRef := r.GetHeadRef()
 	tagRef := r.GetTagRef()
 	now := time.Now().Format(time.RFC3339)
 
 	buildArgs := map[string]*string{
-		"APP_YAML":         &appYaml,
-		"BUILD_DATE":       &now,
-		"COMPONENT":        &compName,
-		"COMPONENT_DIR":    &compDir,
-		"COMPONENT_COMMIT": &compCommit,
-		"ROOT_COMMIT":      &rootCommit,
-		"HEAD_REF":         &headRef,
-		"TAG_REF":          &tagRef,
+		"APP_YAML":       &appYaml,
+		"BUILD_DATE":     &now,
+		"COMPONENT":      &compName,
+		"COMPONENT_DIR":  &compDir,
+		"COMPONENT_HASH": &compHash,
+		"ROOT_COMMIT":    &rootCommit,
+		"HEAD_REF":       &headRef,
+		"TAG_REF":        &tagRef,
 	}
 	log.VerboseMarshal(buildArgs, "Docker build args:")
 
@@ -98,7 +98,7 @@ func (r *repo) Build(compDirName string) string {
 	labels := map[string]string{
 		api.LabelOCIComponent: compName,
 		api.LabelOCICreated:   now,
-		api.LabelOCIRevision:  compCommit,
+		api.LabelOCIRevision:  compHash,
 		api.LabelOCISource:    r.GetRepoURL(),
 	}
 

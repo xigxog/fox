@@ -28,7 +28,7 @@ fox proxy 8080 --wait 5m
 fox proxy 8080 --virtual-env my-env --app-deployment my-dep
 
 	http://127.0.0.1:8080/hello                 # uses my-env and my-deployment
-	http://127.0.0.1:8080/hello?kf-env=your-env # uses your-env and my-dep
+	http://127.0.0.1:8080/hello?kf-ve=your-env # uses your-env and my-dep
 	http://127.0.0.1:8080/hello?kf-dep=your-dep # uses my-env and your-dep
 ```
 
@@ -41,7 +41,7 @@ fox proxy 8080 --virtual-env my-env --app-deployment my-dep
   -n, --namespace string        namespace of KubeFox Platform
   -p, --platform string         name of KubeFox Platform to utilize
   -e, --virtual-env string      environment to add to proxied requests
-      --wait duration           wait up the specified time for components to be ready
+      --wait duration           wait up to the specified time for components to be ready
 ```
 
 ### Options inherited from parent commands

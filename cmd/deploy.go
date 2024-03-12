@@ -36,7 +36,7 @@ func init() {
 func addCommonDeployFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&cfg.Flags.Namespace, "namespace", "n", "", "namespace of KubeFox Platform")
 	cmd.Flags().StringVarP(&cfg.Flags.Platform, "platform", "p", "", "name of KubeFox Platform to utilize")
-	cmd.Flags().DurationVarP(&cfg.Flags.WaitTime, "wait", "", 0, "wait up the specified time for components to be ready")
+	cmd.Flags().DurationVarP(&cfg.Flags.WaitTime, "wait", "", 0, "wait up to the specified time for components to be ready")
 	cmd.Flags().BoolVarP(&cfg.Flags.DryRun, "dry-run", "", false, "submit server-side request without persisting the resource")
 }
 

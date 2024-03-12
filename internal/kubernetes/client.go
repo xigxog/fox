@@ -271,15 +271,15 @@ func (c *Client) WaitPlatformReady(waitTime time.Duration, p *v1alpha1.Platform,
 	}
 }
 
-func (c *Client) WaitPodReady(ctx context.Context, p *v1alpha1.Platform, comp, commit string) error {
-	log.Verbose("Waiting for component '%s' with commit '%s' to be ready...", comp, commit)
+func (c *Client) WaitPodReady(ctx context.Context, p *v1alpha1.Platform, comp, hash string) error {
+	log.Verbose("Waiting for component '%s' with hash '%s' to be ready...", comp, hash)
 
 	hasLabels := client.MatchingLabels{
 		api.LabelK8sComponent: comp,
 		api.LabelK8sPlatform:  p.Name,
 	}
-	if commit != "" {
-		hasLabels[api.LabelK8sComponentCommit] = commit
+	if hash != "" {
+		hasLabels[api.LabelK8sComponentHash] = hash
 	}
 
 	l := &corev1.PodList{}
@@ -301,9 +301,9 @@ func (c *Client) WaitPodReady(ctx context.Context, p *v1alpha1.Platform, comp, c
 			return ctx.Err()
 		}
 		time.Sleep(time.Second * 3)
-		return c.WaitPodReady(ctx, p, comp, commit)
+		return c.WaitPodReady(ctx, p, comp, hash)
 	}
-	log.Verbose("Component '%s' with commit '%s' is ready.", comp, commit)
+	log.Verbose("Component '%s' with commit '%s' is ready.", comp, hash)
 
 	return nil
 }

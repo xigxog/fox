@@ -225,7 +225,7 @@ func (r *repo) buildAppDep() *v1alpha1.AppDeployment {
 }
 
 func (r *repo) extractCompDef(compName string, comp *api.ComponentDefinition) error {
-	commit := comp.Hash
+	hash := comp.Hash
 	img := r.GetCompImage(compName, comp.Hash)
 
 	resp, err := r.docker.ContainerCreate(r.ctx, &container.Config{
@@ -268,7 +268,7 @@ func (r *repo) extractCompDef(compName string, comp *api.ComponentDefinition) er
 	if err := json.Unmarshal(b, comp); err != nil {
 		return err
 	}
-	comp.Hash = commit
+	comp.Hash = hash
 
 	return nil
 }

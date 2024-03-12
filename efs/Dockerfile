@@ -13,7 +13,7 @@ ARG APP_YAML
 ARG BUILD_DATE
 ARG COMPONENT_DIR
 ARG COMPONENT
-ARG COMPONENT_COMMIT
+ARG COMPONENT_HASH
 ARG ROOT_COMMIT
 ARG HEAD_REF
 ARG TAG_REF
@@ -31,7 +31,7 @@ RUN CGO_ENABLED=0 go build \
     -ldflags " \
     -X github.com/xigxog/kubefox/build.date=${BUILD_DATE}\
     -X github.com/xigxog/kubefox/build.component=${COMPONENT} \
-    -X github.com/xigxog/kubefox/build.commit=${COMPONENT_COMMIT} \
+    -X github.com/xigxog/kubefox/build.hash=${COMPONENT_HASH} \
     -X github.com/xigxog/kubefox/build.rootCommit=${ROOT_COMMIT} \
     -X github.com/xigxog/kubefox/build.headRef=${HEAD_REF} \
     -X github.com/xigxog/kubefox/build.tagRef=${TAG_REF}"
