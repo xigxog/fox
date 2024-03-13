@@ -39,12 +39,16 @@ func Init(cfg *config.Config) {
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.Flags.Timeout)
 	defer cancel()
 
-	if cfg.Flags.Quickstart {
+	if cfg.Flags.Quickstart || cfg.Flags.GraphQL {
 		c := kubernetes.NewClient(cfg)
 		p := c.CreatePlatform(ctx, "kubefox-demo", "demo")
 		c.WaitPlatformReady(time.Minute*5, p, nil)
 
-		log.Info("KubeFox initialized for the quickstart guide!")
+		if cfg.Flags.Quickstart {
+			log.Info("KubeFox initialized for the quickstart guide!")
+		} else {
+			log.Info("KubeFox initialized for the GraphQL tutorial!")
+		}
 
 	} else {
 		log.InfoNewline()
@@ -59,6 +63,12 @@ func initApp(cfg *config.Config) {
 
 	if cfg.Flags.Quickstart {
 		initDir(efs.HelloWorldPath, cfg.AppPath)
+		initGit(cfg.RepoPath, cfg)
+		return
+	}
+
+	if cfg.Flags.GraphQL {
+		initDir(efs.GraphQLPath, cfg.AppPath)
 		initGit(cfg.RepoPath, cfg)
 		return
 	}
@@ -119,7 +129,7 @@ func initGit(repoPath string, cfg *config.Config) {
 			remoteURL = fmt.Sprintf("https://github.com/%s/%s.git", cfg.GitHub.Org.Name, filepath.Base(repoPath))
 		}
 
-		if !cfg.Flags.Quickstart {
+		if !(cfg.Flags.Quickstart || cfg.Flags.GraphQL) {
 			remoteURL = foxutils.InputPrompt("Enter URL for remote Git repo", remoteURL, false)
 			if remoteURL != "" {
 				_, err := nr.CreateRemote(&gitcfg.RemoteConfig{

@@ -111,7 +111,7 @@ func (cfg *Config) Load() {
 	b, err := os.ReadFile(cfg.path)
 
 	if errors.Is(err, fs.ErrNotExist) {
-		if cfg.Flags.Quickstart {
+		if cfg.Flags.Quickstart || cfg.Flags.GraphQL {
 			cfg.setupQuickstart("kind")
 			cfg.Fresh = true
 			cfg.Write()

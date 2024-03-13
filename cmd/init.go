@@ -30,7 +30,8 @@ you started.
 }
 
 func init() {
-	initCmd.Flags().BoolVarP(&cfg.Flags.Quickstart, "quickstart", "", false, `use defaults to setup KubeFox for quickstart guide`)
+	initCmd.Flags().BoolVarP(&cfg.Flags.Quickstart, "quickstart", "", false, `use defaults to setup KubeFox for quickstart tutorial`)
+	initCmd.Flags().BoolVarP(&cfg.Flags.GraphQL, "graphql", "", false, `use defaults to setup KubeFox for graphql tutorial`)
 	rootCmd.AddCommand(initCmd)
 }
 

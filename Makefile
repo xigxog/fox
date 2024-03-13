@@ -16,9 +16,9 @@ package:
 image:
 	$(REPO_ROOT)hack/scripts/image.sh
 
-.PHONY: hello-world
-hello-world:
-	$(REPO_ROOT)hack/scripts/hello-world.sh
+.PHONY: examples
+examples:
+	$(REPO_ROOT)hack/scripts/examples.sh
 
 .PHONY: docs
 docs:

@@ -44,6 +44,9 @@ func Start(port int, cfg *config.Config) {
 		cfg: cfg,
 		client: http.Client{
 			Timeout: time.Minute,
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
 		},
 	}
 	defer srv.Shutdown()

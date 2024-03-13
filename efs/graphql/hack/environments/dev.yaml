@@ -1,0 +1,38 @@
+# Copyright 2023 XigXog
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+
+---
+apiVersion: kubefox.xigxog.io/v1alpha1
+kind: Environment
+metadata:
+  name: dev
+spec:
+  releasePolicy:
+    type: Testing
+data:
+  vars:
+    db: dev
+    #subPath: dev
+---
+apiVersion: kubefox.xigxog.io/v1alpha1
+kind: VirtualEnvironment
+metadata:
+  name: dev
+spec:
+  environment: dev
+---
+apiVersion: kubefox.xigxog.io/v1alpha1
+kind: VirtualEnvironment
+metadata:
+  name: dev-john
+spec:
+  environment: dev
+data:
+  vars:
+    db: john
+    subPath: john
