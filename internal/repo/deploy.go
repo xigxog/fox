@@ -110,7 +110,11 @@ func (r *repo) applyIPS(ctx context.Context, p *v1alpha1.Platform, spec *v1alpha
 	cr := r.cfg.GetContainerRegistry()
 	if cr.Token != "" {
 		name := fmt.Sprintf("%s-image-pull-secret", spec.AppName)
-		dockerCfg := fmt.Sprintf(`{"auths":{"%s":{"username":"%s","password":"%s"}}}`, cr.Address, cr.Username, cr.Token)
+		user := cr.Username
+		if user == "" {
+			user = "kubefox"
+		}
+		dockerCfg := fmt.Sprintf(`{"auths":{"%s":{"username":"%s","password":"%s"}}}`, cr.Address, user, cr.Token)
 
 		s := &corev1.Secret{
 			TypeMeta: metav1.TypeMeta{
