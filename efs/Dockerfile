@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 ## Build time
-FROM golang:1.21 as builder
+FROM golang:1.22 as builder
 
 ARG APP_YAML
 ARG BUILD_DATE
@@ -37,6 +37,6 @@ RUN CGO_ENABLED=0 go build \
     -X github.com/xigxog/kubefox/build.tagRef=${TAG_REF}"
 
 ## Runtime
-FROM ghcr.io/xigxog/base
+FROM ghcr.io/xigxog/base:v0.2.0
 COPY --from=builder /component /component
 ENTRYPOINT [ "/component" ]

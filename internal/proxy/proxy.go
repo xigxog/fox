@@ -92,13 +92,13 @@ func (srv *ProxyServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	req.URL.Scheme = "http"
 	req.RequestURI = ""
 
-	env := core.GetParamOrHeader(req, api.HeaderVirtualEnvironment, api.HeaderVirtualEnvironmentAbbrv, api.HeaderVirtualEnvironmentShort)
+	env := core.GetParamOrHeader(req, api.HeaderVirtualEnv, api.HeaderVirtualEnvAbbrv)
 	if env == "" && srv.cfg.Flags.VirtEnv != "" {
-		req.Header.Set(api.HeaderVirtualEnvironment, srv.cfg.Flags.VirtEnv)
+		req.Header.Set(api.HeaderVirtualEnv, srv.cfg.Flags.VirtEnv)
 	}
-	dep := core.GetParamOrHeader(req, api.HeaderAppDep, api.HeaderAppDepAbbrv, api.HeaderAppDepShort)
+	dep := core.GetParamOrHeader(req, api.HeaderAppDeployment, api.HeaderAppDeploymentAbbrv)
 	if dep == "" && srv.cfg.Flags.AppDeployment != "" {
-		req.Header.Set(api.HeaderAppDep, srv.cfg.Flags.AppDeployment)
+		req.Header.Set(api.HeaderAppDeployment, srv.cfg.Flags.AppDeployment)
 	}
 
 	reqData, _ := httputil.DumpRequest(req, false)
