@@ -20,7 +20,7 @@ cp -r "${KUBEFOX_SRC}/examples/go/hello-world/kubefox" "${HELLO_WORLD_SRC}"
     go mod init github.com/xigxog/kubefox/quickstart
     go mod tidy
     # Remove patch version from Go version.
-    sed -i '/go 1.22/c\go 1.22' go.mod
+    sed -i '/go 1.22/c\go 1.22.0' go.mod
 )
 
 GRAPHQL_SRC="efs/graphql"
@@ -32,7 +32,7 @@ cp -r "${KUBEFOX_SRC}/examples/go/graphql" "${GRAPHQL_SRC}"
     go mod init github.com/xigxog/kubefox/graphql
     go mod tidy
     # Remove patch version from Go version.
-    sed -i '/go 1.22/c\go 1.22' go.mod
+    sed -i '/go 1.22/c\go 1.22.0' go.mod
 )
 
 # Go will not embed directories containing a go.mod file. To resolve this the
