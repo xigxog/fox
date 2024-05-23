@@ -12,8 +12,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
-github.com/xigxog/kubefox v0.7.1 h1:qsPWOyP1r3M1an4YxCjhflauaBPpRo/Kk8KD0iKA3n0=
-github.com/xigxog/kubefox v0.7.1/go.mod h1:8m5881Y7ma718YRMWZI+NHXjXEnyuV/h20g/mR70bxI=
+github.com/xigxog/kubefox v0.7.2 h1://cl6XWEX3p0+k4XY5jw79Di59cnCKjTNWDlsCXFah8=
+github.com/xigxog/kubefox v0.7.2/go.mod h1:8m5881Y7ma718YRMWZI+NHXjXEnyuV/h20g/mR70bxI=
 go.opentelemetry.io/proto/otlp v1.2.0 h1:pVeZGk7nXDC9O2hncA6nHldxEjm6LByfA2aN8IOkz94=
 go.opentelemetry.io/proto/otlp v1.2.0/go.mod h1:gGpR8txAl5M03pDhMC79G6SdqNV26naRm/KDsgaHD8A=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
