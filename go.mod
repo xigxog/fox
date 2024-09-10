@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/cli/oauth v1.0.1
-	github.com/docker/docker v26.1.3+incompatible
+	github.com/docker/docker v26.1.5+incompatible
 	github.com/go-git/go-billy/v5 v5.5.0
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/go-logr/logr v1.4.1
